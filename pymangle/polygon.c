@@ -181,7 +181,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
         goto _read_polygon_header_errout;
     }
 
-    if (1 != fscanf(fptr,"%lf",&ply->weight)) {
+    if (1 != fscanf(fptr,"%Lf",&ply->weight)) {
         status=0;
         wlog("Failed to read weight for polygon id %ld", 
              ply->poly_id);
@@ -214,10 +214,10 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                  ply->poly_id, kwbuff);
             goto _read_polygon_header_errout;
         }
-        sscanf(valbuff, "%lf", &ply->area);
+        sscanf(valbuff, "%Lf", &ply->area);
     }
     if (got_pixel) {
-        if (1 != fscanf(fptr,"%lf",&ply->area)) {
+        if (1 != fscanf(fptr,"%Lf",&ply->area)) {
             status=0;
             wlog("Failed to read area for polygon id %ld", 
                  ply->poly_id);
@@ -272,7 +272,7 @@ void print_polygon(FILE* fptr, struct Polygon* self)
     ncaps = cap_vec ? cap_vec->size : 0;
 
     fprintf(fptr,
-            "polygon %ld ( %ld caps, %.16g weight, %ld pixel, %.16g str):\n",
+            "polygon %ld ( %ld caps, %.18Lg weight, %ld pixel, %.18Lg str):\n",
             self->poly_id, ncaps, self->weight, 
             self->pixel_id, self->area);
     if (ncaps > 0) {

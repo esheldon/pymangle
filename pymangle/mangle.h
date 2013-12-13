@@ -10,7 +10,7 @@ struct MangleMask {
     int64 npoly;
     struct PolygonVec* poly_vec;
 
-    double total_area;
+    long double total_area;
     int64 pixelres;
     int64 maxpix;
     char pixeltype;
@@ -18,6 +18,7 @@ struct MangleMask {
 
     int snapped;
     int balkanized;
+    int real;
 
     int verbose;
 
@@ -57,7 +58,7 @@ int set_pixel_map(struct MangleMask* self);
 int mangle_polyid_and_weight_nopix(struct MangleMask *self, 
                                    struct Point *pt, 
                                    int64 *poly_id,
-                                   double *weight);
+                                   long double *weight);
 
 /*
  * check the point against a pixelized mask.  If found, will return the id and
@@ -67,7 +68,7 @@ int mangle_polyid_and_weight_nopix(struct MangleMask *self,
 int mangle_polyid_and_weight_pix(struct MangleMask *self, 
                                  struct Point *pt, 
                                  int64 *poly_id,
-                                 double *weight);
+                                 long double *weight);
 
 
 /*
@@ -77,7 +78,7 @@ int mangle_polyid_and_weight_pix(struct MangleMask *self,
 int mangle_polyid_and_weight(struct MangleMask *self, 
                              struct Point *pt, 
                              int64 *poly_id,
-                             double *weight);
+                             long double *weight);
 
 /*
  * inline version

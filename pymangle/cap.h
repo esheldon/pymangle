@@ -5,10 +5,10 @@
 #include "point.h"
 
 struct Cap {
-    double x;
-    double y;
-    double z;
-    double cm;
+    long double x;
+    long double y;
+    long double z;
+    long double cm;
 };
 
 struct CapVec {

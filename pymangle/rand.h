@@ -5,15 +5,15 @@
 void seed_random(void);
 
 void genrand_allsky(struct Point *pt);
-void genrand_range(double cthmin, double cthmax, 
-                   double phimin, double phimax,
+void genrand_range(long double cthmin, long double cthmax, 
+                   long double phimin, long double phimax,
                    struct Point *pt);
 
-void genrand_theta_phi_allsky(double* theta, double* phi);
+void genrand_theta_phi_allsky(long double* theta, long double* phi);
 
-void genrand_theta_phi(double cthmin, double cthmax, 
-                       double phimin, double phimax,
-                       double* theta, double* phi);
+void genrand_theta_phi(long double cthmin, long double cthmax, 
+                       long double phimin, long double phimax,
+                       long double* theta, long double* phi);
 
 /*
  * convert an ra/dec range to cos(theta) and phi range
@@ -21,9 +21,9 @@ void genrand_theta_phi(double cthmin, double cthmax,
  */
 
 int
-radec_range_to_costhetaphi(double ramin, double ramax, 
-                           double decmin, double decmax,
-                           double* cthmin, double* cthmax, 
-                           double* phimin, double* phimax);
+radec_range_to_costhetaphi(long double ramin, long double ramax, 
+                           long double decmin, long double decmax,
+                           long double* cthmin, long double* cthmax, 
+                           long double* phimin, long double* phimax);
 
 #endif

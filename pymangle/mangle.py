@@ -36,8 +36,8 @@ class Mangle(_mangle.Mangle):
         ------
         polyd,weight tuple of arrays
         """
-        ra = array(ra, ndmin=1, dtype='f8', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f8', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
         return super(Mangle,self).polyid_and_weight(ra,dec)
 
     def polyid(self, ra, dec):
@@ -55,8 +55,8 @@ class Mangle(_mangle.Mangle):
         ------
         Array of poly ids
         """
-        ra = array(ra, ndmin=1, dtype='f8', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f8', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
         return super(Mangle,self).polyid(ra,dec)
 
     def weight(self, ra, dec):
@@ -74,8 +74,8 @@ class Mangle(_mangle.Mangle):
         ------
         Array of weights
         """
-        ra = array(ra, ndmin=1, dtype='f8', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f8', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
         return super(Mangle,self).weight(ra,dec)
 
     def contains(self, ra, dec):
@@ -94,9 +94,28 @@ class Mangle(_mangle.Mangle):
         Array of zeros or ones
         """
         # we specify order to force contiguous
-        ra = array(ra, ndmin=1, dtype='f8', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f8', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
         return super(Mangle,self).contains(ra,dec)
+
+    def calc_simplepix(self, ra, dec):
+        """
+        Calculate simple pixel numbers for list of ra, dec
+
+        parameters
+        ----------
+        ra: scalar or array
+            Right ascension in degrees.  Can be an array.
+        dec: scalar or array
+            Declination in degrees.  Can be an array.
+
+        output
+        ------
+        Array of zeros or ones
+        """
+        ra = array(ra, ndmin=1, dtype='f16', copy=False)
+        dec = array(dec, ndmin=1, dtype='f16', copy=False)
+        return super(Mangle,self).calc_simplepix(ra,dec)
 
 
     filename = property(_mangle.Mangle.get_filename,doc="The mask filename")

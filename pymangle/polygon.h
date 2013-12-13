@@ -10,8 +10,8 @@ struct Polygon {
 
     int64 poly_id;
     int64 pixel_id; // optional
-    double weight;
-    double area; // in str
+    long double weight;
+    long double area; // in str
 
     struct CapVec* cap_vec;
 

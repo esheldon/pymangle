@@ -67,7 +67,7 @@ void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity)
     fprintf(fptr,
             "Mangle\n"
             "\tfile:       %s\n"
-            "\tarea:       %g sqdeg\n"
+            "\tarea:       %Lg sqdeg\n"
             "\tnpoly:      %ld\n"
             "\tpixeltype:  '%c'\n"
             "\tpixelres:   %ld\n"
@@ -93,6 +93,7 @@ int mangle_read(struct MangleMask* self, const char* filename)
     mangle_clear(self);
     self->filename=strdup(filename);
     self->fptr = fopen(filename,"r");
+    self->real = 10;  // default
     if (self->fptr == NULL) {
         wlog("Failed to open file for reading: %s\n",filename);
         status=0;
@@ -161,6 +162,19 @@ int mangle_read_header(struct MangleMask* self)
             if (self->verbose) 
                 wlog("\tpolygons are balkanized\n");
             self->balkanized=1;
+	} else if (0 == strcmp(self->buff,"real")) {
+	    if (1 != fscanf(self->fptr,"%d", &self->real)) {
+		status=0;
+		wlog("Error reading real value");
+		goto _read_header_bail;
+	    }
+	    if (self->verbose)
+		wlog("\treal: %d\n",self->real);
+	    if ((self->real != 8) && (self->real != 10)) {
+		status=0;
+		wlog("Illegal real value (must be 8 or 10)");
+		goto _read_header_bail;
+	    }	    
         } else if (0 == strcmp(self->buff,"pixelization")) {
             // read the pixelization description, e.g. 9s
             if (1 != fscanf(self->fptr,"%s", self->buff)) {
@@ -258,7 +272,7 @@ _set_pixel_map_errout:
 int mangle_polyid_and_weight(struct MangleMask *self, 
                              struct Point *pt, 
                              int64 *poly_id,
-                             double *weight)
+                             long double *weight)
 {
     if (self->pixeltype == 'u') {
         return mangle_polyid_and_weight_nopix(self,pt,poly_id,weight);
@@ -270,7 +284,7 @@ int mangle_polyid_and_weight(struct MangleMask *self,
 int mangle_polyid_and_weight_nopix(struct MangleMask *self, 
                                    struct Point *pt, 
                                    int64 *poly_id,
-                                   double *weight)
+                                   long double *weight)
 {
     size_t i=0;
     struct Polygon* ply=NULL;
@@ -292,7 +306,7 @@ int mangle_polyid_and_weight_nopix(struct MangleMask *self,
 int mangle_polyid_and_weight_pix(struct MangleMask *self, 
                                  struct Point *pt, 
                                  int64 *poly_id,
-                                 double *weight)
+                                 long double *weight)
 {
     int status=1;
     size_t i=0;
