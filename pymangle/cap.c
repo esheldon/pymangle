@@ -37,7 +37,7 @@ int read_cap(FILE* fptr, struct Cap* self)
     int status=1, nres=0;
 
     nres = fscanf(fptr,
-            "%lf %lf %lf %lf",&self->x,&self->y,&self->z,&self->cm);
+            "%Lf %Lf %Lf %Lf",&self->x,&self->y,&self->z,&self->cm);
 
     if (nres != 4) {
         status=0;
@@ -51,14 +51,14 @@ void print_cap(FILE* fptr, struct Cap* self)
     if (!self)
         return;
 
-    fprintf(fptr, "  %.16g %.16g %.16g %.16g\n", 
+    fprintf(fptr, "  %.18Lg %.18Lg %.18Lg %.18Lg\n", 
             self->x, self->y, self->z, self->cm);
 }
 
 int is_in_cap(struct Cap* cap, struct Point* pt)
 {
     int incap=0;
-    double cdot;
+    long double cdot;
 
     cdot = 1.0 - cap->x*pt->x - cap->y*pt->y - cap->z*pt->z;
     if (cap->cm < 0.0) {

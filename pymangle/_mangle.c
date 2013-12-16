@@ -66,16 +66,17 @@ PyMangleMask_repr(struct PyMangleMask* self) {
     sprintf(buff,
             "Mangle\n"
             "\tfile:       %s\n"
-            "\tarea:       %g sqdeg\n"
+            "\tarea:       %Lg sqdeg\n"
             "\tnpoly:      %ld\n"
             "\tpixeltype:  '%c'\n"
             "\tpixelres:   %ld\n"
+	    "\treal:       %d\n"
             "\tnpix:       %ld\n"
             "\tsnapped:    %d\n"
             "\tbalkanized: %d\n"
             "\tverbose:    %d\n", 
             mask->filename, mask->total_area*R2D*R2D, 
-            npoly, mask->pixeltype, mask->pixelres, npix, 
+            npoly, mask->pixeltype, mask->pixelres, mask->real, npix, 
             mask->snapped, mask->balkanized,
             mask->verbose);
 #if PY_MAJOR_VERSION >= 3
@@ -87,7 +88,14 @@ PyMangleMask_repr(struct PyMangleMask* self) {
 
 static PyObject *
 PyMangleMask_area(struct PyMangleMask* self) {
-    return PyFloat_FromDouble(self->mask->total_area*R2D*R2D);
+    PyObject *longdouble_obj = NULL;
+    npy_intp dims[1] = {1};
+    long double total_area_deg2;
+
+    longdouble_obj = PyArray_ZEROS(0,dims,NPY_LONGDOUBLE,0);
+    total_area_deg2 = self->mask->total_area*R2D*R2D;
+    memcpy(PyArray_DATA(longdouble_obj), &total_area_deg2, sizeof(long double));
+    return PyArray_Return((PyArrayObject *)longdouble_obj);
 }
 static PyObject *
 PyMangleMask_npoly(struct PyMangleMask* self) {
@@ -153,8 +161,6 @@ PyMangleMask_is_balkanized(struct PyMangleMask* self) {
 }
 
 
-
-
 static void
 cleanup(struct PyMangleMask* self)
 {
@@ -205,7 +211,7 @@ make_intp_array(npy_intp size, const char* name, npy_intp** ptr)
 }
 
 static PyObject*
-make_double_array(npy_intp size, const char* name, double** ptr)
+make_longdouble_array(npy_intp size, const char* name, long double** ptr)
 {
     PyObject* array=NULL;
     npy_intp dims[1];
@@ -216,7 +222,7 @@ make_double_array(npy_intp size, const char* name, double** ptr)
     }
 
     dims[0] = size;
-    array = PyArray_ZEROS(ndims, dims, NPY_FLOAT64, 0);
+    array = PyArray_ZEROS(ndims, dims, NPY_LONGDOUBLE, 0);
     if (array==NULL) {
         PyErr_Format(PyExc_MemoryError, "could not create %s array",name);
         return NULL;
@@ -225,18 +231,18 @@ make_double_array(npy_intp size, const char* name, double** ptr)
     *ptr = PyArray_DATA((PyArrayObject*)array);
     return array;
 }
-static double* 
-check_double_array(PyObject* array, const char* name, npy_intp* size)
+static long double* 
+check_longdouble_array(PyObject* array, const char* name, npy_intp* size)
 {
-    double* ptr=NULL;
+    long double* ptr=NULL;
     if (!PyArray_Check(array)) {
         PyErr_Format(PyExc_ValueError,
                 "%s must be a numpy array of type 64-bit float",name);
         return NULL;
     }
-    if (NPY_DOUBLE != PyArray_TYPE((PyArrayObject*)array)) {
+    if (NPY_LONGDOUBLE != PyArray_TYPE((PyArrayObject*)array)) {
         PyErr_Format(PyExc_ValueError,
-                "%s must be a numpy array of type 64-bit float",name);
+                "%s must be a numpy array of type '128-bit' float (long double)",name);
         return NULL;
     }
 
@@ -248,12 +254,12 @@ check_double_array(PyObject* array, const char* name, npy_intp* size)
 
 static int
 check_ra_dec_arrays(PyObject* ra_obj, PyObject* dec_obj,
-                    double** ra_ptr, npy_intp* nra, 
-                    double** dec_ptr, npy_intp*ndec)
+                    long double** ra_ptr, npy_intp* nra, 
+                    long double** dec_ptr, npy_intp*ndec)
 {
-    if (!(*ra_ptr=check_double_array(ra_obj,"ra",nra)))
+    if (!(*ra_ptr=check_longdouble_array(ra_obj,"ra",nra)))
         return 0;
-    if (!(*dec_ptr=check_double_array(dec_obj,"dec",ndec)))
+    if (!(*dec_ptr=check_longdouble_array(dec_obj,"dec",ndec)))
         return 0;
     if (*nra != *ndec) {
         PyErr_Format(PyExc_ValueError,
@@ -278,9 +284,9 @@ PyMangleMask_polyid_and_weight(struct PyMangleMask* self, PyObject* args)
     PyObject* dec_obj=NULL;
     PyObject* poly_id_obj=NULL;
     PyObject* weight_obj=NULL;
-    double* ra_ptr=NULL;
-    double* dec_ptr=NULL;
-    double* weight_ptr=NULL;
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    long double* weight_ptr=NULL;
     npy_intp* poly_id_ptr=NULL;
     npy_intp nra=0, ndec=0, i=0;
 
@@ -298,7 +304,7 @@ PyMangleMask_polyid_and_weight(struct PyMangleMask* self, PyObject* args)
         status=0;
         goto _poly_id_and_weight_cleanup;
     }
-    if (!(weight_obj=make_double_array(nra, "weight", &weight_ptr))) {
+    if (!(weight_obj=make_longdouble_array(nra, "weight", &weight_ptr))) {
         status=0;
         goto _poly_id_and_weight_cleanup;
     }
@@ -306,10 +312,11 @@ PyMangleMask_polyid_and_weight(struct PyMangleMask* self, PyObject* args)
     for (i=0; i<nra; i++) {
         point_set_from_radec(&pt, *ra_ptr, *dec_ptr);
 
-        status=mangle_polyid_and_weight_nopix(self->mask, 
-                                              &pt, 
-                                              poly_id_ptr, 
-                                              weight_ptr);
+	//status=mangle_polyid_and_weight_nopix(self->mask,
+	status=MANGLE_POLYID_AND_WEIGHT(self->mask, 		  
+					&pt, 
+					poly_id_ptr, 
+					weight_ptr);
 
         if (status != 1) {
             goto _poly_id_and_weight_cleanup;
@@ -347,9 +354,9 @@ PyMangleMask_polyid(struct PyMangleMask* self, PyObject* args)
     PyObject* dec_obj=NULL;
     PyObject* poly_id_obj=NULL;
 
-    double* ra_ptr=NULL;
-    double* dec_ptr=NULL;
-    double weight=0;
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    long double weight=0;
     npy_intp* poly_id_ptr=NULL;
     npy_intp nra=0, ndec=0, i=0;
 
@@ -401,9 +408,9 @@ PyMangleMask_weight(struct PyMangleMask* self, PyObject* args)
     PyObject* ra_obj=NULL;
     PyObject* dec_obj=NULL;
     PyObject* weight_obj=NULL;
-    double* ra_ptr=NULL;
-    double* dec_ptr=NULL;
-    double* weight_ptr=NULL;
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    long double* weight_ptr=NULL;
     npy_intp poly_id=0;
     npy_intp nra=0, ndec=0, i=0;
 
@@ -414,7 +421,7 @@ PyMangleMask_weight(struct PyMangleMask* self, PyObject* args)
     if (!check_ra_dec_arrays(ra_obj,dec_obj,&ra_ptr,&nra,&dec_ptr,&ndec)) {
         return NULL;
     }
-    if (!(weight_obj=make_double_array(nra, "weight", &weight_ptr))) {
+    if (!(weight_obj=make_longdouble_array(nra, "weight", &weight_ptr))) {
         return NULL;
     }
     for (i=0; i<nra; i++) {
@@ -455,9 +462,9 @@ PyMangleMask_contains(struct PyMangleMask* self, PyObject* args)
     PyObject* dec_obj=NULL;
     PyObject* contained_obj=NULL;
     npy_intp* cont_ptr=NULL;
-    double* ra_ptr=NULL;
-    double* dec_ptr=NULL;
-    double weight=0;
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    long double weight=0;
     npy_intp poly_id=0;
     npy_intp nra=0, ndec=0, i=0;
 
@@ -519,12 +526,12 @@ PyMangleMask_genrand(struct PyMangleMask* self, PyObject* args)
     PyObject* ra_obj=NULL;
     PyObject* dec_obj=NULL;
     PyObject* tuple=NULL;
-    double* ra_ptr=NULL;
-    double* dec_ptr=NULL;
-    double weight=0;
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    long double weight=0;
     npy_intp poly_id=0;
     npy_intp ngood=0;
-    double theta=0, phi=0;
+    long double theta=0, phi=0;
 
 
     if (!PyArg_ParseTuple(args, (char*)"L", &nrand)) {
@@ -538,11 +545,11 @@ PyMangleMask_genrand(struct PyMangleMask* self, PyObject* args)
         goto _genrand_cleanup;
     }
 
-    if (!(ra_obj=make_double_array(nrand, "ra", &ra_ptr))) {
+    if (!(ra_obj=make_longdouble_array(nrand, "ra", &ra_ptr))) {
         status=0;
         goto _genrand_cleanup;
     }
-    if (!(dec_obj=make_double_array(nrand, "dec", &dec_ptr))) {
+    if (!(dec_obj=make_longdouble_array(nrand, "dec", &dec_ptr))) {
         status=0;
         goto _genrand_cleanup;
     }
@@ -604,17 +611,17 @@ PyMangleMask_genrand_range(struct PyMangleMask* self, PyObject* args)
     int status=1;
     PY_LONG_LONG nrand=0;
     double ramin=0,ramax=0,decmin=0,decmax=0;
-    double cthmin=0,cthmax=0,phimin=0,phimax=0;
+    long double cthmin=0,cthmax=0,phimin=0,phimax=0;
     struct Point pt;
     PyObject* ra_obj=NULL;
     PyObject* dec_obj=NULL;
     PyObject* tuple=NULL;
-    double* ra_ptr=NULL;
-    double* dec_ptr=NULL;
-    double weight=0;
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    long double weight=0;
     npy_intp poly_id=0;
     npy_intp ngood=0;
-    double theta=0, phi=0;
+    long double theta=0, phi=0;
 
 
     if (!PyArg_ParseTuple(args, (char*)"Ldddd", 
@@ -628,17 +635,18 @@ PyMangleMask_genrand_range(struct PyMangleMask* self, PyObject* args)
         status=0;
         goto _genrand_range_cleanup;
     }
-    if (!radec_range_to_costhetaphi(ramin,ramax,decmin,decmax,
+    if (!radec_range_to_costhetaphi((long double)ramin,(long double)ramax,
+				    (long double)decmin,(long double)decmax,
                                     &cthmin,&cthmax,&phimin,&phimax)) {
         status=0;
         goto _genrand_range_cleanup;
     }
 
-    if (!(ra_obj=make_double_array(nrand, "ra", &ra_ptr))) {
+    if (!(ra_obj=make_longdouble_array(nrand, "ra", &ra_ptr))) {
         status=0;
         goto _genrand_range_cleanup;
     }
-    if (!(dec_obj=make_double_array(nrand, "dec", &dec_ptr))) {
+    if (!(dec_obj=make_longdouble_array(nrand, "dec", &dec_ptr))) {
         status=0;
         goto _genrand_range_cleanup;
     }
@@ -682,6 +690,76 @@ _genrand_range_cleanup:
 }
 
 
+static PyObject *
+PyMangleMask_pixels(struct PyMangleMask* self) {
+    int status=1;
+    PyObject *pixel_obj=NULL;
+    npy_intp *pixel_ptr=NULL;
+    struct Polygon *ply=NULL;
+    npy_intp i;
+
+    if (!(pixel_obj=make_intp_array(self->mask->poly_vec->size,"pixels", &pixel_ptr))) {
+	status = 0;
+	goto _pixels_cleanup;
+    }
+
+    ply = &self->mask->poly_vec->data[0];
+    for (i=0;i<self->mask->poly_vec->size;i++) {
+	pixel_ptr[i] = ply->pixel_id;
+	ply++;
+    }
+
+ _pixels_cleanup:
+    if (status != 1) {
+	Py_XDECREF(pixel_obj);
+	return NULL;
+    }
+
+    return PyArray_Return((PyArrayObject *)pixel_obj);
+}
+
+static PyObject *
+PyMangleMask_calc_simplepix(struct PyMangleMask *self, PyObject *args) {
+    struct Point pt;
+    PyObject *ra_obj=NULL;
+    PyObject *dec_obj=NULL;
+    PyObject *simplepix_obj=NULL;
+    
+    long double *ra_ptr=NULL;
+    long double *dec_ptr=NULL;
+    npy_intp *simplepix_ptr=NULL;
+    npy_intp nra=0, ndec=0, i=0;
+
+    if (!PyArg_ParseTuple(args, (char*)"OO", &ra_obj, &dec_obj)) {
+        return NULL;
+    }
+
+    if (self->mask->pixeltype == 'u') {
+	// not pixelized!
+	PyErr_SetString(PyExc_ValueError,"Must be a pixelized file");
+	return NULL;
+    }
+
+    if (!check_ra_dec_arrays(ra_obj,dec_obj,&ra_ptr,&nra,&dec_ptr,&ndec)) {
+        return NULL;
+    }
+    if (!(simplepix_obj=make_intp_array(nra, "simplepix", &simplepix_ptr))) {
+        return NULL;
+    }
+
+    for (i=0; i<nra; i++) {
+	point_set_from_radec(&pt, *ra_ptr, *dec_ptr);
+
+	*simplepix_ptr = get_pixel_simple(self->mask->pixelres,&pt);
+
+	ra_ptr++;
+	dec_ptr++;
+	simplepix_ptr++;
+    }
+
+    return simplepix_obj;
+}
+
 
 static PyMethodDef PyMangleMask_methods[] = {
     {"polyid_and_weight", (PyCFunction)PyMangleMask_polyid_and_weight, METH_VARARGS, 
@@ -692,9 +770,9 @@ static PyMethodDef PyMangleMask_methods[] = {
         "parameters\n"
         "----------\n"
         "ra:  array\n"
-        "    A numpy array of type 'f8'\n"
+        "    A numpy array of type 'f16'\n"
         "dec: array\n"
-        "    A numpy array of type 'f8'\n"},
+        "    A numpy array of type 'f16'\n"},
     {"polyid",            (PyCFunction)PyMangleMask_polyid,            METH_VARARGS, 
         "polyid(ra,dec)\n"
         "\n"
@@ -703,9 +781,9 @@ static PyMethodDef PyMangleMask_methods[] = {
         "parameters\n"
         "----------\n"
         "ra:  array\n"
-        "    A numpy array of type 'f8'\n"
+        "    A numpy array of type 'f16'\n"
         "dec: array\n"
-        "    A numpy array of type 'f8'\n"},
+        "    A numpy array of type 'f16'\n"},
     {"weight",            (PyCFunction)PyMangleMask_weight,            METH_VARARGS, 
         "weight(ra,dec)\n"
         "\n"
@@ -714,9 +792,9 @@ static PyMethodDef PyMangleMask_methods[] = {
         "parameters\n"
         "----------\n"
         "ra:  array\n"
-        "    A numpy array of type 'f8'\n"
+        "    A numpy array of type 'f16'\n"
         "dec: array\n"
-        "    A numpy array of type 'f8'\n"},
+        "    A numpy array of type 'f16'\n"},
     {"contains",          (PyCFunction)PyMangleMask_contains,          METH_VARARGS, 
         "contains(ra,dec)\n"
         "\n"
@@ -725,9 +803,9 @@ static PyMethodDef PyMangleMask_methods[] = {
         "parameters\n"
         "----------\n"
         "ra:  array\n"
-        "    A numpy array of type 'f8'\n"
+        "    A numpy array of type 'f16'\n"
         "dec: array\n"
-        "    A numpy array of type 'f8'\n"},
+        "    A numpy array of type 'f16'\n"},
     {"genrand",           (PyCFunction)PyMangleMask_genrand,           METH_VARARGS, 
         "genrand(nrand)\n"
         "\n"
@@ -812,7 +890,21 @@ static PyMethodDef PyMangleMask_methods[] = {
         "get_is_balkanized()\n"
         "\n"
         "Return True if the balkanized keyword was found in the header.\n"},
-
+    {"get_pixels", (PyCFunction)PyMangleMask_pixels,  METH_VARARGS,
+     "get_pixels()\n"
+     "\n"
+     "Return the array of pixels in the input file.\n"},
+    {"calc_simplepix", (PyCFunction)PyMangleMask_calc_simplepix, METH_VARARGS,
+     "calc_simplepix(ra,dec)\n"
+     "\n"
+     "Calculate simple pixel numbers, given pixelization scheme.\n"
+     "\n"
+     "parameters\n"
+     "----------\n"
+     "ra:  array\n"
+     "    A numpy array of type 'f16'\n"
+     "dec: array\n"
+     "    A numpy array of type 'f16'\n"},
     {NULL}  /* Sentinel */
 };
 
@@ -873,6 +965,7 @@ static PyTypeObject PyMangleMaskType = {
         "    contains(ra,dec)\n"
         "    genrand(nrand)\n"
         "    genrand_range(nrand,ramin,ramax,decmin,decmax)\n"
+        "    calc_simplepix(ra,dec)\n"
         "\n"
         "getters (correspond to properties above)\n"
         "----------------------------------------\n"
@@ -885,6 +978,7 @@ static PyTypeObject PyMangleMaskType = {
         "    get_maxpix()\n"
         "    get_is_snapped()\n"
         "    get_is_balkanized()\n"
+        "    get_pixels()\n"
         "\n"
         "See docs for each method for more detail.\n",
     0,                     /* tp_traverse */
