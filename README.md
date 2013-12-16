@@ -63,3 +63,5 @@ build and install the stand alone routines
 
     # clean up
     python build.py clean
+
+test
