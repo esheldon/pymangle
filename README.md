@@ -8,6 +8,8 @@ Martin White.
 
 Currently supports ascii mangle polygon files, with and without pixelization.
 
+Authors: Erin Sheldon.  Long double support added by Eli Rykoff.
+
 examples
 --------
 
