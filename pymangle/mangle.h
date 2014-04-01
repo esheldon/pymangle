@@ -26,6 +26,10 @@ struct MangleMask {
     FILE* fptr;
     char buff[_MANGLE_SMALL_BUFFSIZE];
 
+    char weightfile[_MANGLE_MAX_FILELEN];
+    //int has_weightfile;
+    //char* weightfile;
+
 
     // for error messages
     char err[_MANGLE_LARGE_BUFFSIZE];
@@ -41,6 +45,9 @@ void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity);
 
 int mangle_read(struct MangleMask* self, const char* filename);
 int mangle_read_header(struct MangleMask* self);
+
+int mangle_read_weights(struct MangleMask* self, const char* filename);
+int mangle_set_weights(struct MangleMask* self, long double *weights);
 
 // sum the areas for all polygons and store in ->total_area
 void mangle_calc_area_and_maxpix(struct MangleMask* self);
