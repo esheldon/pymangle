@@ -13,9 +13,12 @@ ext=Extension("pymangle._mangle", ["pymangle/_mangle.c",
                                    "pymangle/point.c",
                                    "pymangle/stack.c",
                                    "pymangle/rand.c"])
+
+exec(open('pymangle/version.py').read())
+
 setup(name="pymangle", 
       packages=['pymangle'],
-      version="0.1",
+      version=__version__,
       data_files=data_files,
       ext_modules=[ext],
       include_dirs=numpy.get_include())
