@@ -724,25 +724,16 @@ PyMangleMask_check_quadrants(struct PyMangleMask* self, PyObject* args)
                                         &weight);
 
         if (poly_id >= 0) {
+            int quadrant;
             mask_flags |= 1;
 
             CapForRand_from_radec(&rcap, ra_cen, dec_cen, ang);
 
-            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 1);
-            if (frac_masked < max_masked_fraction) {
-                mask_flags |= 2;
-            }
-            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 2);
-            if (frac_masked < max_masked_fraction) {
-                mask_flags |= 4;
-            }
-            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 3);
-            if (frac_masked < max_masked_fraction) {
-                mask_flags |= 8;
-            }
-            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 4);
-            if (frac_masked < max_masked_fraction) {
-                mask_flags |= 16;
+            for (quadrant=1; quadrant <= 4; quadrant++) {
+                frac_masked = get_quad_frac_masked(self, nrand, &rcap, quadrant);
+                if (frac_masked < max_masked_fraction) {
+                    mask_flags |= (1<<quadrant);
+                }
             }
         }
         maskflags_ptr[i] = mask_flags;
