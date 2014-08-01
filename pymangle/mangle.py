@@ -1,3 +1,12 @@
+"""
+classes
+    Mangle:
+        A class to work with mangle polygons
+
+functions:
+    genrand_cap:
+        Generate random points in a spherical cap
+"""
 # we over-ride the init to deal with verbose
 # we over-ride point checking codes force inputs to be arrays
 #
@@ -11,6 +20,32 @@ import numpy
 from numpy import array
 from . import _mangle
 __doc__=_mangle.__doc__
+
+def genrand_cap(nrand, ra, dec, angle_degrees, quadrant=0):
+    """
+    generate random points in a spherical cap
+
+    parameters
+    ----------
+    nrand: scalar
+        Number of random points to generate
+    ra: scalar
+        ra center of cap in degrees
+    dec: scalar
+        dec center of cap in degrees
+    angle_degrees: scalar
+        opening angle of cap in degrees 
+    quadrant: scalar
+        Quadrant in which to generate the points.  Set to
+        1,2,3,4 to specify a quadrant, anything else to
+        generate the full cap.  Default 0 (full cap)
+
+    returns
+    -------
+    ra,dec: arrays
+        the random points
+    """
+    return _mangle.genrand_cap(nrand, ra, dec, angle_degrees, quadrant)
 
 class Mangle(_mangle.Mangle):
     __doc__=_mangle.Mangle.__doc__

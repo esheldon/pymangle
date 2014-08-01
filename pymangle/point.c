@@ -40,3 +40,19 @@ radec_from_point(struct Point* pt, long double *ra, long double *dec) {
     *dec = 90.0 - pt->theta*R2D;
 }
 
+void radec_from_thetaphi(long double theta,
+                         long double phi,
+                         long double *ra,
+                         long double *dec)
+{
+    *ra = phi*R2D;
+    *dec = 90.0 - theta*R2D;
+}
+void thetaphi_from_radec(long double ra,
+                         long double dec,
+                         long double *theta,
+                         long double *phi)
+{
+    *theta = (90.0-dec)*D2R;
+    *phi   = ra*D2R;
+}

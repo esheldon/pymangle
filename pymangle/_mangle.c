@@ -1001,7 +1001,91 @@ static PyTypeObject PyMangleMaskType = {
     PyType_GenericNew,                 /* tp_new */
 };
 
+
+
+
+
+
+/*
+ * Generate random points in the specified cap
+ *
+ * This is a straight function, not a method of a mangle mask
+ *
+ */
+
+static PyObject*
+PyMangle_genrand_cap(PyObject* self, PyObject* args)
+{
+    int status=1;
+    PY_LONG_LONG nrand=0, i=0;
+    double ra_cen=0,dec_cen=0,angle_degrees=0;
+    int quadrant;
+    PyObject* ra_obj=NULL;
+    PyObject* dec_obj=NULL;
+    PyObject* tuple=NULL;
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    struct CapForRand rcap;
+
+    if (!PyArg_ParseTuple(args, (char*)"Ldddi", 
+                          &nrand, &ra_cen, &dec_cen, &angle_degrees, &quadrant)) {
+        return NULL;
+    }
+
+    if (nrand <= 0) {
+        PyErr_Format(PyExc_ValueError, 
+                "nrand should be > 0, got (%ld)",(npy_intp)nrand);
+        status=0;
+        goto genrand_cap_cleanup;
+    }
+    if (angle_degrees <= 0 || angle_degrees > 180.) {
+        PyErr_Format(PyExc_ValueError, 
+                "angle_degrees should in [0,180), got (%ld)",(long)angle_degrees);
+        status=0;
+        goto genrand_cap_cleanup;
+    }
+
+
+    if (!(ra_obj=make_longdouble_array(nrand, "ra", &ra_ptr))) {
+        status=0;
+        goto genrand_cap_cleanup;
+    }
+    if (!(dec_obj=make_longdouble_array(nrand, "dec", &dec_ptr))) {
+        status=0;
+        goto genrand_cap_cleanup;
+    }
+
+    seed_random();
+
+    CapForRand_from_radec(&rcap, ra_cen, dec_cen, angle_degrees);
+
+    for (i=0; i<nrand; i++) {
+        genrand_cap_radec(&rcap, quadrant, &ra_ptr[i], &dec_ptr[i]);
+    }
+
+genrand_cap_cleanup:
+    if (status != 1) {
+        Py_XDECREF(ra_obj);
+        Py_XDECREF(dec_obj);
+        Py_XDECREF(tuple);
+        return NULL;
+    }
+
+    tuple=PyTuple_New(2);
+    PyTuple_SetItem(tuple, 0, ra_obj);
+    PyTuple_SetItem(tuple, 1, dec_obj);
+    return tuple;
+}
+
+
+
 static PyMethodDef mangle_methods[] = {
+
+    {"genrand_cap",       (PyCFunction)PyMangle_genrand_cap,         METH_VARARGS, 
+        "genrand_cap(ra, dec, angle_degrees)\n"
+        "\n"
+        "get random points in the specified cap.\n"},
+
     {NULL}  /* Sentinel */
 };
 
