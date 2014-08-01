@@ -19,9 +19,8 @@ functions:
 import numpy
 from numpy import array
 from . import _mangle
-__doc__=_mangle.__doc__
 
-def genrand_cap(nrand, ra, dec, angle_degrees, quadrant=0):
+def genrand_cap(nrand, ra, dec, angle_degrees, quadrant=-1):
     """
     generate random points in a spherical cap
 
@@ -38,7 +37,7 @@ def genrand_cap(nrand, ra, dec, angle_degrees, quadrant=0):
     quadrant: scalar
         Quadrant in which to generate the points.  Set to
         1,2,3,4 to specify a quadrant, anything else to
-        generate the full cap.  Default 0 (full cap)
+        generate the full cap.  Default -1 (full cap)
 
     returns
     -------
@@ -148,6 +147,49 @@ class Mangle(_mangle.Mangle):
         ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
         dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
         return super(Mangle,self).contains(ra,dec)
+
+    def check_quadrants(self,
+                        ra,
+                        dec,
+                        angle_degrees,
+                        density=10.0*60.0**2,
+                        max_masked_fraction=0.05):
+        """
+        Check points quadrants of the spherical cap against the mask
+
+        parameters
+        ----------
+        ra: scalar or array
+            Right ascension in degrees.  Can be an array.
+        dec: scalar or array
+            Declination in degrees.  Can be an array.
+        angle_degrees: scalar or array
+            radius angle of cap in degrees.  Can be an array.
+            should be same length as ra,dec
+        density: scalar
+            Density for random points placed in cap per square
+            degree.  Default is 36000.0, which corresponds to
+            10 per square arcminute.
+        max_masked_fraction: scalar
+            If more than this fraction of random points in the
+            quadrant are masked, the quadrant is considered bad
+
+        output
+        ------
+        maskflags: array
+            2**0 is set if center of cap is inside the map
+            2**1 is set if first quadrant is OK
+            2**2 is set if second quadrant is OK
+            2**3 is set if third quadrant is OK
+            2**4 is set if fourth quadrant is OK
+        """
+        # we specify order to force contiguous
+        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
+        angle_degrees = array(angle_degrees, ndmin=1, dtype='f16', copy=False, order='C')
+        return super(Mangle,self).check_quadrants(ra,dec,angle_degrees,
+                                                  density,max_masked_fraction)
+
 
     def calc_simplepix(self, ra, dec):
         """
