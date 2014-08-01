@@ -569,6 +569,189 @@ _weight_cleanup:
     return contained_obj;
 }
 
+/*
+   check the quadrants in the specified cap against the mask
+   using a monte-carlo approach
+
+   The quadrant is considered "good" if the fraction of masked
+   points is less than pmax
+
+   parameters
+   ----------
+   ra
+       center of cap in degrees
+   dec
+       center of cap in degrees
+   angle_degrees
+       the opening angle of cap in degrees
+   amin
+       minimum solid angle to probe in degrees.  holes larger than this area
+       will not be missed with probability greater than pmax
+   pmax
+       holes of size amin will be missed with probability less than pmax
+
+   returns
+   -------
+   maskflags
+       2**0 is set if central point is inside the map
+       2**1 is set if first quadrant is OK
+       2**2 is set if second quadrant is OK
+       2**3 is set if third quadrant is OK
+       2**4 is set if fourth quadrant is OK
+*/
+
+// number of randoms do guarantee amin is missed with probability less than
+// pmax
+/*
+static long get_check_quad_nrand(double area, double amin, double pmax)
+{
+    long nrand;
+    double pmiss;
+
+    pmiss = 1.0 - amin/area;
+    if (pmiss > 1.e-10) {
+        // how many points do we need in order for the
+        // probability of missing the hole to be pmax?
+        //      We need n such that (1-amin/a)^n = pmax
+        double tmp = log10(pmax)/log10(pmiss);
+        if (tmp < 20) tmp = 20;
+        if (tmp > 20000) tmp = 20000;
+        nrand = lround(tmp);
+    } else {
+        // we reach here often because the search area is very
+        // close to or smaller than our minimum resolvable area
+        // We don't want nrand to be less than say 20
+        nrand = 20;
+    }
+
+    return nrand;
+}
+*/
+
+// generate random points, return the fraction that were masked
+static double get_quad_frac_masked(struct PyMangleMask* self,
+                                   long nrand,
+                                   const struct CapForRand *rcap,
+                                   int quadrant)
+{
+    int status=1;
+    long nmasked=0, i;
+    double frac_masked;
+    long double ra, dec, weight;
+    int64 poly_id;
+    struct Point pt;
+
+    for (i=0; i<nrand; i++) {
+        genrand_cap_radec(rcap, quadrant, &ra, &dec);
+        point_set_from_radec(&pt, ra, dec);
+
+        status=MANGLE_POLYID_AND_WEIGHT(self->mask, 
+                                        &pt, 
+                                        &poly_id, 
+                                        &weight);
+
+        if (poly_id < 0) {
+            nmasked += 1;
+        }
+    }
+
+    frac_masked = ( (double)nmasked )/( (double)nrand );
+    return frac_masked;
+}
+
+static PyObject*
+PyMangleMask_check_quadrants(struct PyMangleMask* self, PyObject* args)
+{
+    int status=1;
+
+    PyObject* ra_obj=NULL;
+    PyObject* dec_obj=NULL;
+    PyObject* angle_degrees_obj=NULL;
+    PyObject* maskflags_obj=NULL;
+    npy_intp nra=0, ndec=0, nang=0, i=0, *maskflags_ptr=NULL;
+
+    long double* ra_ptr=NULL;
+    long double* dec_ptr=NULL;
+    long double* ang_ptr=NULL;
+
+    double density_degrees,
+           max_masked_fraction, frac_masked;
+    double area;
+    struct Point pt;
+    long double weight;
+    int64 poly_id;
+    struct CapForRand rcap;
+
+    long nrand;
+    int mask_flags=0;
+
+    if (!PyArg_ParseTuple(args, (char*)"OOOdd",
+                          &ra_obj,
+                          &dec_obj,
+                          &angle_degrees_obj,
+                          &density_degrees, // number of randoms/square degree
+                          &max_masked_fraction)) {
+        return NULL;
+    }
+
+    if (!check_ra_dec_arrays(ra_obj,dec_obj,&ra_ptr,&nra,&dec_ptr,&ndec)) {
+        return NULL;
+    }
+    if (!check_ra_dec_arrays(ra_obj,angle_degrees_obj,&ra_ptr,&nra,&ang_ptr,&nang)) {
+        return NULL;
+    }
+    if (!(maskflags_obj=make_intp_array(nra, "maskflags", &maskflags_ptr))) {
+        return NULL;
+    }
+
+
+    // area of a quadrant = 1/4 pi r^2
+    for (i=0; i<nra; i++) {
+        double dec_cen=dec_ptr[i];
+        double ra_cen=ra_ptr[i];
+        double ang=ang_ptr[i];
+        mask_flags=0;
+
+        area = 0.25*M_PI*ang*ang;
+        nrand = (long) (area*density_degrees);
+
+
+        // first check if the center itself is contained
+        point_set_from_radec(&pt, ra_ptr[i], dec_ptr[i]);
+        status=MANGLE_POLYID_AND_WEIGHT(self->mask, 
+                                        &pt, 
+                                        &poly_id, 
+                                        &weight);
+
+        if (poly_id >= 0) {
+            mask_flags |= 1;
+
+            CapForRand_from_radec(&rcap, ra_cen, dec_cen, ang);
+
+            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 1);
+            if (frac_masked < max_masked_fraction) {
+                mask_flags |= 2;
+            }
+            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 2);
+            if (frac_masked < max_masked_fraction) {
+                mask_flags |= 4;
+            }
+            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 3);
+            if (frac_masked < max_masked_fraction) {
+                mask_flags |= 8;
+            }
+            frac_masked = get_quad_frac_masked(self, nrand, &rcap, 4);
+            if (frac_masked < max_masked_fraction) {
+                mask_flags |= 16;
+            }
+        }
+        maskflags_ptr[i] = mask_flags;
+    }
+
+    return maskflags_obj;
+}
+
+
 
 /*
  * Generate random points.  This function draws randoms initially from the full
@@ -682,6 +865,7 @@ PyMangleMask_genrand_range(struct PyMangleMask* self, PyObject* args)
     long double weight=0;
     npy_intp poly_id=0;
     npy_intp ngood=0;
+    int num_contained=0;
     long double theta=0, phi=0;
 
 
@@ -702,6 +886,38 @@ PyMangleMask_genrand_range(struct PyMangleMask* self, PyObject* args)
         status=0;
         goto _genrand_range_cleanup;
     }
+
+    point_set_from_radec(&pt, ramin, decmin);
+    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
+    if (poly_id >= 0) {
+        num_contained += 1;
+    }
+
+    point_set_from_radec(&pt, ramin, decmax);
+    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
+    if (poly_id >= 0) {
+        num_contained += 1;
+    }
+
+    point_set_from_radec(&pt, ramax, decmin);
+    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
+    if (poly_id >= 0) {
+        num_contained += 1;
+    }
+
+    point_set_from_radec(&pt, ramax, decmax);
+    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
+    if (poly_id >= 0) {
+        num_contained += 1;
+    }
+
+    if (num_contained==0) {
+        PyErr_Format(PyExc_ValueError,
+                "no corners are contained within mask");
+        status=0;
+        goto _genrand_range_cleanup;
+    }
+
 
     if (!(ra_obj=make_longdouble_array(nrand, "ra", &ra_ptr))) {
         status=0;
@@ -927,6 +1143,13 @@ static PyMethodDef PyMangleMask_methods[] = {
         "    A numpy array of type 'f16'\n"
         "dec: array\n"
         "    A numpy array of type 'f16'\n"},
+
+    {"check_quadrants",   (PyCFunction)PyMangleMask_check_quadrants,          METH_VARARGS, 
+        "check_quadrants(ra,dec)\n"
+        "\n"
+        "check quadrants of a cap against the mask\n"},
+
+
     {"genrand",           (PyCFunction)PyMangleMask_genrand,           METH_VARARGS, 
         "genrand(nrand)\n"
         "\n"
@@ -1283,6 +1506,7 @@ init_mangle(void)
     }
     m = Py_InitModule3("_mangle", mangle_methods, 
             "This module defines a class to work with Mangle masks.\n"
+            "and some generic functions.\n"
             "See docs for pymangle.Mangle for more details\n");
     if (m==NULL) {
         return;
