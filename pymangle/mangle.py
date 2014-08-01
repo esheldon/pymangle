@@ -156,6 +156,11 @@ class Mangle(_mangle.Mangle):
                         max_masked_fraction=0.05):
         """
         Check points quadrants of the spherical cap against the mask
+        using random points
+
+        If more than a certain fraction of the random points is masked, the
+        quadrant is considered masked.  The sensitivity can be adjusted
+        by using a higher density of random points.
 
         parameters
         ----------
