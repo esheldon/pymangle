@@ -70,4 +70,5 @@ void genrand_cap_radec(const struct CapForRand *rcap,
                        int quadrant,
                        long double *ra,
                        long double *dec);
+
 #endif
