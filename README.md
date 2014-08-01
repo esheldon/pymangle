@@ -50,6 +50,17 @@ examples
     dec_max=10.0
     ra_rand, dec_rand = m.genrand_range(1000,ra_min,ra_max,dec_min,dec_max)
 
+    # get the polygon weights
+    weights = m.weights
+
+    # read in a new set of weights
+    m.read_weightfile(weightfile)
+
+    # set the weights
+
+    m.weights = weight_array
+
+
 build and install python library
 --------------------------------
 

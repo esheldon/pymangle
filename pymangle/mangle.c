@@ -34,6 +34,7 @@ void mangle_clear(struct MangleMask* self)
     if (self != NULL) {
         free(self->filename);
         self->filename=NULL;
+	memset(self->weightfile, 0, sizeof(self->weightfile));
         self->poly_vec = PolygonVec_free(self->poly_vec);
         self->pixel_list_vec = PixelListVec_free(self->pixel_list_vec);
 
@@ -74,10 +75,11 @@ void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity)
             "\tnpix:       %ld\n"
             "\tsnapped:    %d\n"
             "\tbalkanized: %d\n"
+	    "\tweightfile: %s\n"
             "\tverbose:    %d\n", 
             self->filename, self->total_area*R2D*R2D, 
             npoly, self->pixeltype, self->pixelres, npix, 
-            self->snapped, self->balkanized,
+            self->snapped, self->balkanized, self->weightfile,
             self->verbose);
 
     if (verbosity > 1) {
@@ -210,6 +212,89 @@ _read_header_bail:
     return status;
 }
 
+int mangle_read_weights(struct MangleMask* self, const char* weightfile)
+{
+    int status=1;
+    FILE *wfptr;
+    int64 i;
+
+    long double *weight_new;
+    long double test;
+
+    struct Polygon *ply=NULL;
+
+    
+
+    if ((wfptr = fopen(weightfile,"r")) == NULL) {
+	wlog("Failed to open file for reading: %s\n",weightfile);
+	status=0;
+	goto _mangle_readweight_bail;
+    }
+
+    // allocate memory
+    if ((weight_new = (long double *)calloc(self->npoly,sizeof(long double))) == NULL) {
+	wlog("Failed to allocate memory for reading %s\n",weightfile);
+	fclose(wfptr);
+	status=0;
+	goto _mangle_readweight_bail;
+    }
+    
+    // read in the lines
+
+    for (i=0;i<self->npoly;i++) {
+	if (1 != fscanf(wfptr,"%Lf",&(weight_new[i]))) {
+	    wlog("Number of weights in weightfile %s less than number of polygons (%ld)\n",weightfile,self->npoly);
+	    fclose(wfptr);
+	    status=0;
+	    free(weight_new);
+	    goto _mangle_readweight_bail;
+	}
+    }
+
+    // are there any extra lines?  produce error.
+    if (fscanf(wfptr,"%Lf",&test) == 1) {
+	wlog("Number of weights in weightfile %s greater than number of polygons (%ld)\n",weightfile,self->npoly);
+	fclose(wfptr);
+	status=0;
+	free(weight_new);
+	goto _mangle_readweight_bail;
+    }
+
+    // and copy...
+    ply = &self->poly_vec->data[0];
+    for (i=0;i<self->npoly;i++) {
+	ply->weight = weight_new[i];
+	ply++;
+    }
+
+    // free memory
+    free(weight_new);
+    
+    // close file
+    fclose(wfptr);
+
+    // and because it all worked we can set the filename
+    snprintf(self->weightfile,_MANGLE_MAX_FILELEN,"%s",weightfile);
+
+ _mangle_readweight_bail:
+    return status;
+}
+
+int mangle_set_weights(struct MangleMask* self, long double *weights) {
+    int status=1;
+    int64 i;
+    struct Polygon *ply=NULL;
+
+    ply = &self->poly_vec->data[0];
+    for (i=0;i<self->npoly;i++) {
+	ply->weight = weights[i];
+	ply++;
+    }
+
+    memset(self->weightfile, 0, sizeof(self->weightfile));
+    
+    return status;
+}
 
 void mangle_calc_area_and_maxpix(struct MangleMask* self)
 {

@@ -1,4 +1,4 @@
-//#define NPY_NO_DEPRECATED_API
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <string.h>
 #include <math.h>
@@ -48,6 +48,54 @@ PyMangleMask_init(struct PyMangleMask* self, PyObject *args, PyObject *kwds)
     return 0;
 }
 
+static PyObject *
+PyMangleMask_read_weights(struct PyMangleMask* self, PyObject *args, PyObject *kwds)
+{
+    char *weightfile = NULL;
+
+    if (!PyArg_ParseTuple(args, (char*)"s", &weightfile)) {
+	Py_RETURN_FALSE;
+    }
+
+    if (!mangle_read_weights(self->mask, weightfile)) {
+	PyErr_Format(PyExc_IOError,"Error reading weight file %s",weightfile);
+	Py_RETURN_FALSE;
+    }
+
+    Py_RETURN_TRUE;
+}
+
+static PyObject *
+PyMangleMask_set_weights(struct PyMangleMask* self, PyObject *args, PyObject *kwds)
+{
+    PyObject *weight_obj = NULL;
+    long double *weights;
+
+    if (!PyArg_ParseTuple(args, (char*)"O", &weight_obj)) {
+	PyErr_SetString(PyExc_TypeError,"Failed to parse args to set_weights");
+	Py_RETURN_FALSE;
+    }
+
+    if (PyArray_NDIM((PyArrayObject *)weight_obj) != 1) {
+	PyErr_SetString(PyExc_ValueError,"Input to set_weights must be 1D array");
+	Py_RETURN_FALSE;
+    }
+
+    if (PyArray_DIM((PyArrayObject *)weight_obj, 0) != self->mask->npoly) {
+	PyErr_SetString(PyExc_ValueError,"Input number of weights must be equal to number of polygons.");
+	Py_RETURN_FALSE;
+    }
+
+    weights = (long double *) PyArray_DATA((PyArrayObject *)weight_obj);
+
+    if (!mangle_set_weights(self->mask, weights)) {
+	PyErr_SetString(PyExc_ValueError,"Error setting weights");
+	Py_RETURN_FALSE;
+    }
+
+    Py_RETURN_TRUE;
+}
+
 /*
  * we use sprintf since PyString_FromFormat doesn't accept floating point types
  */
@@ -56,29 +104,30 @@ static PyObject *
 PyMangleMask_repr(struct PyMangleMask* self) {
     npy_intp npoly;
     npy_intp npix;
-    char buff[1024];
+    char buff[4096];
     struct MangleMask* mask=NULL;
 
     mask = self->mask;
     npoly = (mask->poly_vec != NULL) ? mask->poly_vec->size : 0;
     npix = (mask->pixel_list_vec != NULL) ? mask->pixel_list_vec->size : 0;
-
-    sprintf(buff,
-            "Mangle\n"
-            "\tfile:       %s\n"
-            "\tarea:       %Lg sqdeg\n"
-            "\tnpoly:      %ld\n"
-            "\tpixeltype:  '%c'\n"
-            "\tpixelres:   %ld\n"
-	    "\treal:       %d\n"
-            "\tnpix:       %ld\n"
-            "\tsnapped:    %d\n"
-            "\tbalkanized: %d\n"
-            "\tverbose:    %d\n", 
-            mask->filename, mask->total_area*R2D*R2D, 
-            npoly, mask->pixeltype, mask->pixelres, mask->real, npix, 
-            mask->snapped, mask->balkanized,
-            mask->verbose);
+   
+    snprintf(buff,4096,
+	     "Mangle\n"
+	     "\tfile:       %s\n"
+	     "\tarea:       %Lg sqdeg\n"
+	     "\tnpoly:      %ld\n"
+	     "\tpixeltype:  '%c'\n"
+	     "\tpixelres:   %ld\n"
+	     "\treal:       %d\n"
+	     "\tnpix:       %ld\n"
+	     "\tsnapped:    %d\n"
+	     "\tbalkanized: %d\n"
+	     "\tweightfile: %s\n"
+	     "\tverbose:    %d\n", 
+	     mask->filename, mask->total_area*R2D*R2D, 
+	     npoly, mask->pixeltype, mask->pixelres, mask->real, npix, 
+	     mask->snapped, mask->balkanized, mask->weightfile,
+	     mask->verbose);
 #if PY_MAJOR_VERSION >= 3
     return PyUnicode_FromString((const char*)buff);
 #else
@@ -94,7 +143,7 @@ PyMangleMask_area(struct PyMangleMask* self) {
 
     longdouble_obj = PyArray_ZEROS(0,dims,NPY_LONGDOUBLE,0);
     total_area_deg2 = self->mask->total_area*R2D*R2D;
-    memcpy(PyArray_DATA(longdouble_obj), &total_area_deg2, sizeof(long double));
+    memcpy(PyArray_DATA((PyArrayObject *)longdouble_obj), &total_area_deg2, sizeof(long double));
     return PyArray_Return((PyArrayObject *)longdouble_obj);
 }
 static PyObject *
@@ -139,6 +188,18 @@ PyMangleMask_filename(struct PyMangleMask* self) {
     return PyString_FromString( (const char* ) self->mask->filename);
 #endif
 }
+
+static PyObject *
+PyMangleMask_weightfile(struct PyMangleMask* self) {
+
+    
+#if PY_MAJOR_VERSION >= 3
+    return PyUnicode_FromString( (const char* ) self->mask->weightfile);
+#else
+    return PyString_FromString( (const char* ) self->mask->weightfile);
+#endif
+}
+  
 
 
 
@@ -719,6 +780,66 @@ PyMangleMask_pixels(struct PyMangleMask* self) {
 }
 
 static PyObject *
+PyMangleMask_weights(struct PyMangleMask* self) {
+    int status=1;
+    PyObject *weight_obj=NULL;
+    long double *weight_ptr=NULL;
+    struct Polygon *ply=NULL;
+    npy_intp i;
+
+    if (!(weight_obj=make_longdouble_array(self->mask->poly_vec->size,"weight", &weight_ptr))) {
+	status = 0;
+	goto _weights_cleanup;
+    }
+
+    ply = &self->mask->poly_vec->data[0];
+    for (i=0;i<self->mask->poly_vec->size;i++) {
+	weight_ptr[i] = ply->weight;
+	ply++;
+    }
+
+ _weights_cleanup:
+    if (status != 1) {
+	Py_XDECREF(weight_obj);
+	return NULL;
+    }
+
+    return PyArray_Return((PyArrayObject *)weight_obj);
+}
+
+static PyObject *
+PyMangleMask_areas(struct PyMangleMask* self) {
+    int status=1;
+    PyObject *area_obj=NULL;
+    long double *area_ptr=NULL;
+    struct Polygon *ply=NULL;
+    npy_intp i;
+
+    if (!(area_obj=make_longdouble_array(self->mask->poly_vec->size,"area", &area_ptr))) {
+	status = 0;
+	goto _areas_cleanup;
+    }
+
+    ply = &self->mask->poly_vec->data[0];
+    for (i=0;i<self->mask->poly_vec->size;i++) {
+	area_ptr[i] = ply->area*R2D*R2D;
+	ply++;
+    }
+
+ _areas_cleanup:
+    if (status != 1) {
+	Py_XDECREF(area_obj);
+	return NULL;
+    }
+
+    return PyArray_Return((PyArrayObject *)area_obj);
+}
+
+
+
+
+
+static PyObject *
 PyMangleMask_calc_simplepix(struct PyMangleMask *self, PyObject *args) {
     struct Point pt;
     PyObject *ra_obj=NULL;
@@ -845,12 +966,23 @@ static PyMethodDef PyMangleMask_methods[] = {
         "------\n"
         "ra,dec arrays"},
 
-
+    {"read_weights", (PyCFunction)PyMangleMask_read_weights, METH_VARARGS,
+     "read_weights(weightfile)\n"
+     "\n"
+     "Read weights from a separate weightfile.\n"},
+    {"set_weights", (PyCFunction)PyMangleMask_set_weights, METH_VARARGS,
+     "set_weights(weights)\n"
+     "\n"
+     "Set weights for all polygons.\n"},    
     {"get_filename",       (PyCFunction)PyMangleMask_filename,         METH_VARARGS, 
         "filename()\n"
         "\n"
         "Return the mask filename.\n"},
 
+    {"get_weightfile",     (PyCFunction)PyMangleMask_weightfile, METH_VARARGS,
+     "weightfile()\n"
+     "\n"
+     "Return the weight filename.\n"},
 
 
     {"get_area",       (PyCFunction)PyMangleMask_area,         METH_VARARGS, 
@@ -894,6 +1026,14 @@ static PyMethodDef PyMangleMask_methods[] = {
      "get_pixels()\n"
      "\n"
      "Return the array of pixels in the input file.\n"},
+    {"get_weights", (PyCFunction)PyMangleMask_weights, METH_VARARGS,
+     "get_weights()\n"
+     "\n"
+     "Return the array of weights in the input file.\n"},
+    {"get_areas", (PyCFunction)PyMangleMask_areas, METH_VARARGS,
+     "get_areas()\n"
+     "\n"
+     "Return the array of areas in the input file (in square degrees).\n"},
     {"calc_simplepix", (PyCFunction)PyMangleMask_calc_simplepix, METH_VARARGS,
      "calc_simplepix(ra,dec)\n"
      "\n"
@@ -954,6 +1094,7 @@ static PyTypeObject PyMangleMaskType = {
         "    maxpix\n"
         "    is_snapped\n"
         "    is_balkanized\n"
+        "    weightfile\n"
         "\n"
         "See docs for each property for more details.\n"
         "\n"
@@ -966,10 +1107,12 @@ static PyTypeObject PyMangleMaskType = {
         "    genrand(nrand)\n"
         "    genrand_range(nrand,ramin,ramax,decmin,decmax)\n"
         "    calc_simplepix(ra,dec)\n"
+        "    read_weights(weightfile)\n"
         "\n"
         "getters (correspond to properties above)\n"
         "----------------------------------------\n"
         "    get_filename()\n"
+        "    get_weightfile()\n"
         "    get_area()\n"
         "    get_npoly()\n"
         "    get_is_pixelized()\n"
@@ -979,6 +1122,12 @@ static PyTypeObject PyMangleMaskType = {
         "    get_is_snapped()\n"
         "    get_is_balkanized()\n"
         "    get_pixels()\n"
+        "    get_weights()\n"
+        "    get_areas()\n"
+        "\n"
+        "setter (corresponding to property above)\n"
+        "----------------------------------------\n"
+        "    set_weights(weights)\n"
         "\n"
         "See docs for each method for more detail.\n",
     0,                     /* tp_traverse */

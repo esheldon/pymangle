@@ -56,6 +56,22 @@ class Mangle(_mangle.Mangle):
             verb=0
         super(Mangle,self).__init__(filename,verb)
 
+    def read_weights(self, weightfile):
+        """
+        Read weights from a file with one weight on each line.
+
+        parameters
+        ----------
+        weightfile: ascii file with one weight on each line.
+                    Must have same number of weights as npoly.
+
+        output
+        ------
+        none
+        """
+        
+        super(Mangle,self).read_weights(weightfile)
+
     def polyid_and_weight(self, ra, dec):
         """
         Check points against mask, returning (poly_id,weight).
@@ -152,8 +168,20 @@ class Mangle(_mangle.Mangle):
         dec = array(dec, ndmin=1, dtype='f16', copy=False)
         return super(Mangle,self).calc_simplepix(ra,dec)
 
+    def _set_weights(self,weights):
+        # check length of array...
+        npoly = _mangle.Mangle.get_npoly(self)
+        if (weights.size != npoly) :
+            raise IndexError("Must set weights for full list of %d polygons." % (npoly))
+
+        # make long doubles
+        weights = array(weights, ndmin=1, dtype='f16', copy=False)
+
+        super(Mangle,self).set_weights(weights)
+
 
     filename = property(_mangle.Mangle.get_filename,doc="The mask filename")
+    weightfile = property(_mangle.Mangle.get_weightfile,doc="The weight filename (optional)")
     area = property(_mangle.Mangle.get_area,doc="The area of the mask")
     npoly = property(_mangle.Mangle.get_npoly,doc="The number of polygons in the mask")
     is_pixelized = property(_mangle.Mangle.get_is_pixelized,doc="True if pixelized.")
@@ -162,3 +190,5 @@ class Mangle(_mangle.Mangle):
     maxpix = property(_mangle.Mangle.get_pixelres,doc="The maximum pixel value")
     is_snapped = property(_mangle.Mangle.get_is_snapped,doc="True if snapped.")
     is_balkanized = property(_mangle.Mangle.get_is_balkanized,doc="True if balkanized.")
+    areas = property(_mangle.Mangle.get_areas,doc="Area of pixels in mask.")
+    weights = property(_mangle.Mangle.get_weights,_set_weights,doc="Weights of pixels in mask.")
