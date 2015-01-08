@@ -44,12 +44,16 @@ PixelListVec_free(struct PixelListVec* self)
     size_t i=0;
     struct i64stack* s=NULL;
     if (self != NULL) {
-        for (i=0; i<self->size; i++) {
-            s = self->data[i];
-            if (s != NULL) {
-                s=i64stack_delete(s);
-            }
-        }
+	if (self->data != NULL) {
+	    for (i=0; i<self->size; i++) {
+		s = self->data[i];
+		if (s != NULL) {
+		    s=i64stack_delete(s);
+		}
+	    }
+	    free(self->data);
+	}
+	
         free(self);
     }
 
