@@ -650,7 +650,7 @@ static double get_quad_frac_masked(struct PyMangleMask* self,
                                         &poly_id, 
                                         &weight);
 
-        if (poly_id < 0) {
+        if (poly_id < 0 || weight <= 0.) {
             nmasked += 1;
         }
     }
