@@ -277,10 +277,9 @@ void print_polygon(FILE* fptr, struct Polygon* self)
             self->pixel_id, self->area);
     if (ncaps > 0) {
         size_t i=0;
-        struct Cap *cap = &cap_vec->data[0];
         for (i=0; i<ncaps; i++) {
+            struct Cap *cap = &cap_vec->data[i];
             print_cap(fptr,cap);
-            cap++;
         }
     }
 
@@ -291,10 +290,9 @@ void print_polygons(FILE* fptr, struct PolygonVec *self)
         size_t i;
         struct Polygon* ply=NULL;
 
-        ply = &self->data[0];
         for (i=0; i<self->size; i++) {
+            ply = &self->data[i];
             print_polygon(fptr,ply);
-            ply++;
         }
     }
 }

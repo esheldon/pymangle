@@ -283,11 +283,16 @@ class CapVec(_mangle.CapVec):
     cv=CapVec(3)
 
     len(cv)
-    cv.set(data_or_cap)
+    cv[index] = data_or_cap
+    cap = cv[index]
+
+    # getters and setters same as above
+    cv.set(index,data_or_cap)
+    cap=cv.get(index)
     """
     def set(self, index, data):
         """
-        Set an element of the vector.
+        Set the cap at the specified element
 
         parameters
         ----------
@@ -295,6 +300,11 @@ class CapVec(_mangle.CapVec):
             Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
             or a Cap
         """
+
+        sz=self.size()
+        if index > (sz-1):
+            raise IndexError("index %s out of bounds: [0,%s)" % (index,sz))
+
         if isinstance(data, Cap):
             cap=data
         else:
@@ -302,8 +312,100 @@ class CapVec(_mangle.CapVec):
 
         self._set_cap(index, data)
 
+    def get(self, index):
+        """
+        get a copy of the Cap specified by the index
+
+        parameters
+        ----------
+        data: sequence or Cap
+            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
+            or a Cap
+        """
+
+        sz=self.size()
+        if index > (sz-1):
+            raise IndexError("index %s out of bounds: [0,%s)" % (index,sz))
+
+        return self._get_cap(index)
+
+    def __setitem__(self, index, data):
+        """
+        Set the cap at the specified element
+
+        parameters
+        ----------
+        data: sequence or Cap
+            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
+        """
+        self.set(index, data)
+
+    def __getitem__(self, index):
+        """
+        get a copy of the Cap specified by the index
+        """
+        return self.get(index)
+
     def __len__(self):
         """
         length of CapVec
         """
         return self.size()
+
+class Polygon(_mangle.Polygon):
+    """
+    class representing a mangle Polygon
+
+    methods
+
+    poly=Polygon(poly_id, pixel_id, weight, cap_vec)
+
+    len(poly)
+    # copy of a cap
+    cap = poly[index]
+
+    # getters and setters same as above
+    cap=cv.get(index)
+    """
+    def __init__(self, poly_id, pixel_id, weight, cap_vec):
+        if not isinstance(cap_vec, CapVec):
+            raise ValueError("cap_vec must be of "
+                             "type CapVec, got %s" % type(cap_vec))
+
+        wtarr = array(weight, ndmin=1, dtype='f16', copy=False)
+
+        super(Polygon,self).__init__(poly_id,
+                                     pixel_id,
+                                     wtarr,
+                                     cap_vec)
+
+    def get(self, index):
+        """
+        get a copy of the Cap specified by the index
+
+        parameters
+        ----------
+        data: sequence or Cap
+            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
+            or a Cap
+        """
+
+        return self.get(index)
+
+    def __getitem__(self, index):
+        """
+        get a copy of the Cap specified by the index
+        """
+        sz=self.size()
+        if index > (sz-1):
+            raise IndexError("index %s out of bounds: [0,%s)" % (index,sz))
+
+        return self._get_cap(index)
+
+    def __len__(self):
+        """
+        length of CapVec
+        """
+        return self.size()
+
+

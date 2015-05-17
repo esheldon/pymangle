@@ -206,7 +206,7 @@ static PyTypeObject PyMangleCapType = {
 struct PyMangleCapVec {
     PyObject_HEAD
 
-    struct CapVec* capvec;
+    struct CapVec* cap_vec;
 };
 
 static int
@@ -218,8 +218,8 @@ PyMangleCapVec_init(struct PyMangleCapVec* self, PyObject *args, PyObject *kwds)
         return -1;
     }
 
-    self->capvec = CapVec_new( (size_t) n);
-    if (self->capvec == NULL) {
+    self->cap_vec = CapVec_new( (size_t) n);
+    if (self->cap_vec == NULL) {
         PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
         return -1;
     }
@@ -231,7 +231,7 @@ static PyObject *
 PyMangleCapVec_repr(struct PyMangleCapVec* self) {
     char buff[64];
 
-    snprintf(buff,64, "MangleCapVec, ncaps: %lu", self->capvec->size);
+    snprintf(buff,64, "MangleCapVec, ncaps: %lu", self->cap_vec->size);
 
 #if PY_MAJOR_VERSION >= 3
     return PyUnicode_FromString((const char*)buff);
@@ -245,7 +245,7 @@ static void
 PyMangleCapVec_dealloc(struct PyMangleCapVec* self)
 {
 
-    self->capvec=CapVec_free(self->capvec);
+    self->cap_vec=CapVec_free(self->cap_vec);
 
 #if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
     Py_TYPE(self)->tp_free((PyObject*)self);
@@ -258,7 +258,7 @@ PyMangleCapVec_dealloc(struct PyMangleCapVec* self)
 static PyObject*
 PyMangleCapVec_size(struct PyMangleCapVec* self)
 {
-    return Py_BuildValue("n",(Py_ssize_t) self->capvec->size);
+    return Py_BuildValue("n",(Py_ssize_t) self->cap_vec->size);
 }
 
 
@@ -278,7 +278,7 @@ PyMangleCapVec_set_cap(struct PyMangleCapVec* self, PyObject *args, PyObject *kw
 
     cap_obj = (struct PyMangleCap *) cap_pyobj;
 
-    cap_set(&self->capvec->data[index],
+    cap_set(&self->cap_vec->data[index],
             cap_obj->cap.x,
             cap_obj->cap.y,
             cap_obj->cap.z,
@@ -287,6 +287,36 @@ PyMangleCapVec_set_cap(struct PyMangleCapVec* self, PyObject *args, PyObject *kw
     Py_RETURN_NONE;
 }
 
+static PyObject*
+PyMangleCapVec_get_cap(struct PyMangleCapVec* self, PyObject *args, PyObject *kwds)
+{
+    PyTypeObject *type=&PyMangleCapType;
+
+    const struct Cap* cap=NULL;
+    PyObject* cap_copy=NULL;
+    struct PyMangleCap* cap_st=NULL;
+
+    Py_ssize_t index=0;
+
+    if (!PyArg_ParseTuple(args, (char*)"n", &index)) {
+        return NULL;
+    }
+
+
+    cap = &self->cap_vec->data[index];
+
+    cap_copy = _PyObject_New(type);
+    cap_st=(struct PyMangleCap *) cap_copy;
+    
+    cap_st->cap.x = cap->x;
+    cap_st->cap.y = cap->y;
+    cap_st->cap.z = cap->z;
+    cap_st->cap.cm = cap->cm;
+
+    return cap_copy;
+}
+
+
 
 
 
@@ -294,6 +324,7 @@ PyMangleCapVec_set_cap(struct PyMangleCapVec* self, PyObject *args, PyObject *kw
 static PyMethodDef PyMangleCapVec_methods[] = { 
     {"size", (PyCFunction)PyMangleCapVec_size, METH_VARARGS, "get length of CapVec\n"},
     {"_set_cap", (PyCFunction)PyMangleCapVec_set_cap, METH_VARARGS, "set the cap data at the specified index\n"},
+    {"_get_cap", (PyCFunction)PyMangleCapVec_get_cap, METH_VARARGS, "get a copy of the cap at the specified index\n"},
     {NULL}
 };
 
@@ -401,6 +432,238 @@ static PyTypeObject PyMangleCapVecType = {
 };
 
 
+
+/* 
+   Polygon class
+*/
+
+struct PyManglePolygon {
+    PyObject_HEAD
+
+    struct Polygon poly;
+};
+
+/*
+   Initialize from a CapVec
+
+   The data CapVec are copied
+*/
+
+static int
+PyManglePolygon_init(struct PyManglePolygon* self, PyObject *args, PyObject *kwds)
+{
+    int64 poly_id=0, pixel_id=0;
+    PyObject* wt_arr_obj=NULL;
+    long double *wt_data=NULL;
+
+    PyObject *cap_vec_obj=NULL;
+    struct PyMangleCapVec *cap_vec_st=NULL;
+
+    if (!PyArg_ParseTuple(args, (char*)"llOO", &poly_id, &pixel_id, &wt_arr_obj, &cap_vec_obj)) {
+        return -1;
+    }
+
+    wt_data = (long double *) PyArray_DATA( (PyArrayObject*) wt_arr_obj);
+
+    cap_vec_st=(struct PyMangleCapVec *) cap_vec_obj;
+
+    self->poly.poly_id  = poly_id;
+    self->poly.pixel_id = pixel_id;
+    self->poly.weight   = wt_data[0];
+
+    // we need garea to calculate this I think
+    self->poly.area = -1.0;
+
+    self->poly.cap_vec = CapVec_copy(cap_vec_st->cap_vec);
+    if (self->poly.cap_vec == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
+        return -1;
+    }
+
+    return 0;
+}
+
+static void
+PyManglePolygon_dealloc(struct PyManglePolygon* self)
+{
+
+    self->poly.cap_vec=CapVec_free(self->poly.cap_vec);
+
+#if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
+    Py_TYPE(self)->tp_free((PyObject*)self);
+#else
+    // old way, removed in python 3
+    self->ob_type->tp_free((PyObject*)self);
+#endif
+}
+
+static PyObject *
+PyManglePolygon_repr(struct PyManglePolygon* self) {
+    char buff[64];
+
+    snprintf(buff,
+             sizeof(buff),
+             "poly_id: %ld pixel_id: %ld weight: %.18Lg area: %.18Lg ncaps: %lu",
+             self->poly.poly_id,
+             self->poly.pixel_id,
+             self->poly.weight,
+             self->poly.area,
+             self->poly.cap_vec->size);
+
+#if PY_MAJOR_VERSION >= 3
+    return PyUnicode_FromString((const char*)buff);
+#else
+    return PyString_FromString((const char*)buff);
+#endif
+}
+
+
+static PyObject*
+PyManglePolygon_size(struct PyManglePolygon* self)
+{
+    return Py_BuildValue("n",(Py_ssize_t) self->poly.cap_vec->size);
+}
+
+static PyObject*
+PyManglePolygon_get_cap(struct PyManglePolygon* self, PyObject *args, PyObject *kwds)
+{
+    PyTypeObject *type=&PyMangleCapType;
+
+    const struct Cap* cap=NULL;
+    PyObject* cap_copy=NULL;
+    struct PyMangleCap* cap_st=NULL;
+
+    Py_ssize_t index=0;
+
+    if (!PyArg_ParseTuple(args, (char*)"n", &index)) {
+        return NULL;
+    }
+
+
+    cap = &self->poly.cap_vec->data[index];
+
+    cap_copy = _PyObject_New(type);
+    cap_st=(struct PyMangleCap *) cap_copy;
+    
+    cap_st->cap.x = cap->x;
+    cap_st->cap.y = cap->y;
+    cap_st->cap.z = cap->z;
+    cap_st->cap.cm = cap->cm;
+
+    return cap_copy;
+}
+
+
+
+
+// methods for PyManglePolygon
+static PyMethodDef PyManglePolygon_methods[] = { 
+    {"size", (PyCFunction)PyManglePolygon_size, METH_VARARGS, "get length of Polygon\n"},
+    {"_get_cap", (PyCFunction)PyManglePolygon_get_cap, METH_VARARGS, "get a copy of the cap at the specified index\n"},
+};
+
+// the type definition for PyManglePolygon
+
+static PyTypeObject PyManglePolygonType = {
+#if PY_MAJOR_VERSION >= 3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+#endif
+    "_mangle.Mangle",             /*tp_name*/
+    sizeof(struct PyManglePolygon), /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    (destructor)PyManglePolygon_dealloc, /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    //0,                         /*tp_repr*/
+    (reprfunc)PyManglePolygon_repr,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    "A class to work with Mangle masks.\n"
+        "\n"
+        "construction\n"
+        "    import pymangle\n"
+        "    m=pymangle.Mangle(mask_file, verbose=False)\n"
+        "\n"
+        "\n"
+        "read-only properties\n"
+        "--------------------\n"
+        "    filename\n"
+        "    area\n"
+        "    npoly\n"
+        "    is_pixelized\n"
+        "    pixeltype\n"
+        "    pixelres\n"
+        "    maxpix\n"
+        "    is_snapped\n"
+        "    is_balkanized\n"
+        "    weightfile\n"
+        "\n"
+        "See docs for each property for more details.\n"
+        "\n"
+        "methods\n"
+        "----------------------\n"
+        "    polyid(ra,dec)\n"
+        "    weight(ra,dec)\n"
+        "    polyid_and_weight(ra,dec)\n"
+        "    contains(ra,dec)\n"
+        "    genrand(nrand)\n"
+        "    genrand_range(nrand,ramin,ramax,decmin,decmax)\n"
+        "    calc_simplepix(ra,dec)\n"
+        "    read_weights(weightfile)\n"
+        "\n"
+        "getters (correspond to properties above)\n"
+        "----------------------------------------\n"
+        "    get_filename()\n"
+        "    get_weightfile()\n"
+        "    get_area()\n"
+        "    get_npoly()\n"
+        "    get_is_pixelized()\n"
+        "    get_pixeltype()\n"
+        "    get_pixelres()\n"
+        "    get_maxpix()\n"
+        "    get_is_snapped()\n"
+        "    get_is_balkanized()\n"
+        "    get_pixels()\n"
+        "    get_weights()\n"
+        "    get_areas()\n"
+        "\n"
+        "setter (corresponding to property above)\n"
+        "----------------------------------------\n"
+        "    set_weights(weights)\n"
+        "\n"
+        "See docs for each method for more detail.\n",
+    0,                     /* tp_traverse */
+    0,                     /* tp_clear */
+    0,                     /* tp_richcompare */
+    0,                     /* tp_weaklistoffset */
+    0,                     /* tp_iter */
+    0,                     /* tp_iternext */
+    PyManglePolygon_methods,             /* tp_methods */
+    0,             /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    //0,     /* tp_init */
+    (initproc)PyManglePolygon_init,      /* tp_init */
+    0,                         /* tp_alloc */
+    PyType_GenericNew,                 /* tp_new */
+};
 
 
 
@@ -1881,6 +2144,7 @@ init_mangle(void)
 
     PyMangleCapType.tp_new = PyType_GenericNew;
     PyMangleCapVecType.tp_new = PyType_GenericNew;
+    PyManglePolygonType.tp_new = PyType_GenericNew;
     PyMangleMaskType.tp_new = PyType_GenericNew;
 
 #if PY_MAJOR_VERSION >= 3
@@ -1888,6 +2152,9 @@ init_mangle(void)
         return NULL;
     }
     if (PyType_Ready(&PyMangleCapVecType) < 0) {
+        return NULL;
+    }
+    if (PyType_Ready(&PyManglePolygonType) < 0) {
         return NULL;
     }
     if (PyType_Ready(&PyMangleMaskType) < 0) {
@@ -1908,6 +2175,9 @@ init_mangle(void)
     if (PyType_Ready(&PyMangleCapVecType) < 0) {
         return;
     }
+    if (PyType_Ready(&PyManglePolygonType) < 0) {
+        return;
+    }
     m = Py_InitModule3("_mangle", mangle_methods, 
             "This module defines a class to work with Mangle masks.\n"
             "and some generic functions.\n"
@@ -1920,6 +2190,7 @@ init_mangle(void)
     Py_INCREF(&PyMangleMaskType);
     PyModule_AddObject(m, "Cap", (PyObject *)&PyMangleCapType);
     PyModule_AddObject(m, "CapVec", (PyObject *)&PyMangleCapVecType);
+    PyModule_AddObject(m, "Polygon", (PyObject *)&PyManglePolygonType);
     PyModule_AddObject(m, "Mangle", (PyObject *)&PyMangleMaskType);
 
     import_array();

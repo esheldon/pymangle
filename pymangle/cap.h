@@ -32,6 +32,7 @@ struct CapForRand {
 
 struct CapVec* CapVec_new(size_t n);
 struct CapVec* CapVec_free(struct CapVec* self);
+struct CapVec* CapVec_copy(const struct CapVec* self);
 
 void cap_set(struct Cap* self,
              long double x,

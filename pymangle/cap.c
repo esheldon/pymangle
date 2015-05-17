@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "cap.h"
 #include "point.h"
 #include "defs.h"
@@ -32,6 +33,23 @@ struct CapVec* CapVec_free(struct CapVec* self)
     }
     return self;
 }
+
+struct CapVec* CapVec_copy(const struct CapVec* self)
+{
+    struct CapVec * cap_vec=NULL;
+    if (!self) {
+        return NULL;
+    }
+
+    cap_vec = CapVec_new(self->size);
+    memcpy(cap_vec->data,
+           self->data,
+           self->size*sizeof(struct Cap));
+
+    return cap_vec;
+}
+
+
 
 void cap_set(struct Cap* self,
              long double x,
