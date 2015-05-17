@@ -16,6 +16,8 @@ functions:
 # we also grab the doc strings from the C code as needed, 
 # only writing new ones in the over-ridden methods
 
+from __future__ import print_function
+
 import numpy
 from numpy import array
 from . import _mangle
@@ -246,7 +248,20 @@ class Cap(_mangle.Cap):
 
     In order to support 128 bit, the input is an array [x,y,z,cm]
     """
-    def __init__(self, data):
+    def __init__(self, data=None):
+        """
+        Initialize the cap with 128-bit data
+
+        parameters
+        ----------
+        data: array or sequence
+            An length 4 array of 128 bit floats, or convertable to that.
+        """
+
+        if data is not None:
+            self.set(data)
+
+    def set(self, data):
         """
         Initialize the cap with 128-bit data
 
@@ -259,4 +274,8 @@ class Cap(_mangle.Cap):
         if data.size != 4:
             raise ValueError("capdata must be an array of length 4, got %d" % data.size)
 
-        super(Cap,self).__init__(data)
+        super(Cap,self).set(data)
+
+class CapVec(_mangle.CapVec):
+    def set(self, index, data):
+        pass

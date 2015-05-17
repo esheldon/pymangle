@@ -47,6 +47,7 @@ int read_cap(FILE* fptr, struct Cap* self)
 
     return status;
 }
+
 void print_cap(FILE* fptr, struct Cap* self)
 {
     if (!self)
@@ -55,6 +56,22 @@ void print_cap(FILE* fptr, struct Cap* self)
     fprintf(fptr, "  %.18Lg %.18Lg %.18Lg %.18Lg\n", 
             self->x, self->y, self->z, self->cm);
 }
+
+void snprint_cap(const struct Cap* self, char *buff, size_t n)
+{
+    if (!self)
+        return;
+
+    snprintf(buff,
+             n,
+             "%.18Lg %.18Lg %.18Lg %.18Lg",
+             self->x,
+             self->y,
+             self->z,
+             self->cm);
+}
+
+
 
 int is_in_cap(struct Cap* cap, struct Point* pt)
 {

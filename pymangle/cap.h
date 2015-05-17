@@ -35,6 +35,7 @@ struct CapVec* CapVec_free(struct CapVec* self);
 
 int read_cap(FILE* fptr, struct Cap* self);
 void print_cap(FILE* fptr, struct Cap* self);
+void snprint_cap(const struct Cap* self, char *buff, size_t n);
 
 int is_in_cap(struct Cap* cap, struct Point* pt);
 

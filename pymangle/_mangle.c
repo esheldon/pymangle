@@ -37,13 +37,18 @@ struct PyMangleCap {
 static int
 PyMangleCap_init(struct PyMangleCap* self, PyObject *args, PyObject *kwds)
 {
+    return 0;
+}
+
+static PyObject*
+PyMangleCap_set(struct PyMangleCap* self, PyObject *args, PyObject *kwds)
+{
     struct Cap *cap=NULL;
     PyObject* arr_obj=NULL;
     long double *arr_data=NULL;
 
-
     if (!PyArg_ParseTuple(args, (char*)"O", &arr_obj)) {
-        return -1;
+        return NULL;
     }
 
     arr_data = (long double *) PyArray_DATA( (PyArrayObject*) arr_obj);
@@ -54,8 +59,9 @@ PyMangleCap_init(struct PyMangleCap* self, PyObject *args, PyObject *kwds)
     cap->z=arr_data[2];
     cap->cm=arr_data[3];
 
-    return 0;
+    Py_RETURN_NONE;
 }
+
 
 static void
 PyMangleCap_dealloc(struct PyMangleCap* self)
@@ -76,12 +82,7 @@ PyMangleCap_repr(struct PyMangleCap* self) {
     char buff[128];
     struct Cap* cap=&self->cap;
 
-    snprintf(buff,128,
-             "MangleCap %.16Lg %.16Lg %.16Lg %.16Lg",
-             cap->x,
-             cap->y,
-             cap->z,
-             cap->cm);
+    snprint_cap(cap, buff, sizeof(buff));
 
 #if PY_MAJOR_VERSION >= 3
     return PyUnicode_FromString((const char*)buff);
@@ -91,7 +92,10 @@ PyMangleCap_repr(struct PyMangleCap* self) {
 }
 
 // methods for PyMangleCap
-static PyMethodDef PyMangleCap_methods[] = { {NULL}};
+static PyMethodDef PyMangleCap_methods[] = { 
+    {"set", (PyCFunction)PyMangleCap_set, METH_VARARGS, "set the cap data\n"},
+    {NULL}
+};
 
 // the type definition for PyMangleCap
 
@@ -192,6 +196,176 @@ static PyTypeObject PyMangleCapType = {
     0,                         /* tp_dictoffset */
     //0,     /* tp_init */
     (initproc)PyMangleCap_init,      /* tp_init */
+    0,                         /* tp_alloc */
+    PyType_GenericNew,                 /* tp_new */
+};
+
+
+
+/*
+
+   CapVec class
+
+*/
+
+struct PyMangleCapVec {
+    PyObject_HEAD
+
+    struct CapVec* capvec;
+};
+
+static int
+PyMangleCapVec_init(struct PyMangleCapVec* self, PyObject *args, PyObject *kwds)
+{
+    Py_ssize_t n=0;
+
+    if (!PyArg_ParseTuple(args, (char*)"n", &n)) {
+        return -1;
+    }
+
+    self->capvec = CapVec_new( (size_t) n);
+    if (self->capvec == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
+        return -1;
+    }
+
+    return 0;
+}
+
+static PyObject *
+PyMangleCapVec_repr(struct PyMangleCapVec* self) {
+    char buff[64];
+
+    snprintf(buff,64, "MangleCapVec, ncaps: %lu", self->capvec->size);
+
+#if PY_MAJOR_VERSION >= 3
+    return PyUnicode_FromString((const char*)buff);
+#else
+    return PyString_FromString((const char*)buff);
+#endif
+}
+
+
+static void
+PyMangleCapVec_dealloc(struct PyMangleCapVec* self)
+{
+
+    self->capvec=CapVec_free(self->capvec);
+
+#if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
+    Py_TYPE(self)->tp_free((PyObject*)self);
+#else
+    // old way, removed in python 3
+    self->ob_type->tp_free((PyObject*)self);
+#endif
+}
+
+
+// methods for PyMangleCapVec
+static PyMethodDef PyMangleCapVec_methods[] = { 
+    //{"set", (PyCFunction)PyMangleCapVec_set, METH_VARARGS, "set the cap data\n"},
+    {NULL}
+};
+
+// the type definition for PyMangleCapVec
+
+static PyTypeObject PyMangleCapVecType = {
+#if PY_MAJOR_VERSION >= 3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+#endif
+    "_mangle.Mangle",             /*tp_name*/
+    sizeof(struct PyMangleCapVec), /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    (destructor)PyMangleCapVec_dealloc, /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    //0,                         /*tp_repr*/
+    (reprfunc)PyMangleCapVec_repr,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    "A class to work with Mangle masks.\n"
+        "\n"
+        "construction\n"
+        "    import pymangle\n"
+        "    m=pymangle.Mangle(mask_file, verbose=False)\n"
+        "\n"
+        "\n"
+        "read-only properties\n"
+        "--------------------\n"
+        "    filename\n"
+        "    area\n"
+        "    npoly\n"
+        "    is_pixelized\n"
+        "    pixeltype\n"
+        "    pixelres\n"
+        "    maxpix\n"
+        "    is_snapped\n"
+        "    is_balkanized\n"
+        "    weightfile\n"
+        "\n"
+        "See docs for each property for more details.\n"
+        "\n"
+        "methods\n"
+        "----------------------\n"
+        "    polyid(ra,dec)\n"
+        "    weight(ra,dec)\n"
+        "    polyid_and_weight(ra,dec)\n"
+        "    contains(ra,dec)\n"
+        "    genrand(nrand)\n"
+        "    genrand_range(nrand,ramin,ramax,decmin,decmax)\n"
+        "    calc_simplepix(ra,dec)\n"
+        "    read_weights(weightfile)\n"
+        "\n"
+        "getters (correspond to properties above)\n"
+        "----------------------------------------\n"
+        "    get_filename()\n"
+        "    get_weightfile()\n"
+        "    get_area()\n"
+        "    get_npoly()\n"
+        "    get_is_pixelized()\n"
+        "    get_pixeltype()\n"
+        "    get_pixelres()\n"
+        "    get_maxpix()\n"
+        "    get_is_snapped()\n"
+        "    get_is_balkanized()\n"
+        "    get_pixels()\n"
+        "    get_weights()\n"
+        "    get_areas()\n"
+        "\n"
+        "setter (corresponding to property above)\n"
+        "----------------------------------------\n"
+        "    set_weights(weights)\n"
+        "\n"
+        "See docs for each method for more detail.\n",
+    0,                     /* tp_traverse */
+    0,                     /* tp_clear */
+    0,                     /* tp_richcompare */
+    0,                     /* tp_weaklistoffset */
+    0,                     /* tp_iter */
+    0,                     /* tp_iternext */
+    PyMangleCapVec_methods,             /* tp_methods */
+    0,             /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    //0,     /* tp_init */
+    (initproc)PyMangleCapVec_init,      /* tp_init */
     0,                         /* tp_alloc */
     PyType_GenericNew,                 /* tp_new */
 };
@@ -1676,10 +1850,14 @@ init_mangle(void)
 
 
     PyMangleCapType.tp_new = PyType_GenericNew;
+    PyMangleCapVecType.tp_new = PyType_GenericNew;
     PyMangleMaskType.tp_new = PyType_GenericNew;
 
 #if PY_MAJOR_VERSION >= 3
     if (PyType_Ready(&PyMangleCapType) < 0) {
+        return NULL;
+    }
+    if (PyType_Ready(&PyMangleCapVecType) < 0) {
         return NULL;
     }
     if (PyType_Ready(&PyMangleMaskType) < 0) {
@@ -1697,6 +1875,9 @@ init_mangle(void)
     if (PyType_Ready(&PyMangleCapType) < 0) {
         return;
     }
+    if (PyType_Ready(&PyMangleCapVecType) < 0) {
+        return;
+    }
     m = Py_InitModule3("_mangle", mangle_methods, 
             "This module defines a class to work with Mangle masks.\n"
             "and some generic functions.\n"
@@ -1708,6 +1889,7 @@ init_mangle(void)
 
     Py_INCREF(&PyMangleMaskType);
     PyModule_AddObject(m, "Cap", (PyObject *)&PyMangleCapType);
+    PyModule_AddObject(m, "CapVec", (PyObject *)&PyMangleCapVecType);
     PyModule_AddObject(m, "Mangle", (PyObject *)&PyMangleMaskType);
 
     import_array();
