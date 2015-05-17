@@ -277,5 +277,33 @@ class Cap(_mangle.Cap):
         super(Cap,self).set(data)
 
 class CapVec(_mangle.CapVec):
+    """
+    methods
+
+    cv=CapVec(3)
+
+    len(cv)
+    cv.set(data_or_cap)
+    """
     def set(self, index, data):
-        pass
+        """
+        Set an element of the vector.
+
+        parameters
+        ----------
+        data: sequence or Cap
+            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
+            or a Cap
+        """
+        if isinstance(data, Cap):
+            cap=data
+        else:
+            cap=Cap(data)
+
+        self._set_cap(index, data)
+
+    def __len__(self):
+        """
+        length of CapVec
+        """
+        return self.size()

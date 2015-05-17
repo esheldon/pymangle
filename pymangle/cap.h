@@ -33,6 +33,12 @@ struct CapForRand {
 struct CapVec* CapVec_new(size_t n);
 struct CapVec* CapVec_free(struct CapVec* self);
 
+void cap_set(struct Cap* self,
+             long double x,
+             long double y,
+             long double z,
+             long double cm);
+
 int read_cap(FILE* fptr, struct Cap* self);
 void print_cap(FILE* fptr, struct Cap* self);
 void snprint_cap(const struct Cap* self, char *buff, size_t n);

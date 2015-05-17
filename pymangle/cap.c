@@ -33,6 +33,19 @@ struct CapVec* CapVec_free(struct CapVec* self)
     return self;
 }
 
+void cap_set(struct Cap* self,
+             long double x,
+             long double y,
+             long double z,
+             long double cm)
+{
+    self->x=x;
+    self->y=y;
+    self->z=z;
+    self->cm=cm;
+}
+
+
 int read_cap(FILE* fptr, struct Cap* self) 
 {
     int status=1, nres=0;

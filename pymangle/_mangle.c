@@ -43,21 +43,16 @@ PyMangleCap_init(struct PyMangleCap* self, PyObject *args, PyObject *kwds)
 static PyObject*
 PyMangleCap_set(struct PyMangleCap* self, PyObject *args, PyObject *kwds)
 {
-    struct Cap *cap=NULL;
     PyObject* arr_obj=NULL;
-    long double *arr_data=NULL;
+    long double *data=NULL;
 
     if (!PyArg_ParseTuple(args, (char*)"O", &arr_obj)) {
         return NULL;
     }
 
-    arr_data = (long double *) PyArray_DATA( (PyArrayObject*) arr_obj);
+    data = (long double *) PyArray_DATA( (PyArrayObject*) arr_obj);
 
-    cap=&self->cap;
-    cap->x=arr_data[0];
-    cap->y=arr_data[1];
-    cap->z=arr_data[2];
-    cap->cm=arr_data[3];
+    cap_set(&self->cap, data[0], data[1], data[2], data[3]);
 
     Py_RETURN_NONE;
 }
@@ -260,10 +255,45 @@ PyMangleCapVec_dealloc(struct PyMangleCapVec* self)
 #endif
 }
 
+static PyObject*
+PyMangleCapVec_size(struct PyMangleCapVec* self)
+{
+    return Py_BuildValue("n",(Py_ssize_t) self->capvec->size);
+}
+
+
+
+static PyObject*
+PyMangleCapVec_set_cap(struct PyMangleCapVec* self, PyObject *args, PyObject *kwds)
+{
+
+    PyObject* cap_pyobj=NULL;
+    struct PyMangleCap *cap_obj=NULL;
+
+    Py_ssize_t index=0;
+
+    if (!PyArg_ParseTuple(args, (char*)"nO", &index, &cap_pyobj)) {
+        return NULL;
+    }
+
+    cap_obj = (struct PyMangleCap *) cap_pyobj;
+
+    cap_set(&self->capvec->data[index],
+            cap_obj->cap.x,
+            cap_obj->cap.y,
+            cap_obj->cap.z,
+            cap_obj->cap.cm);
+
+    Py_RETURN_NONE;
+}
+
+
+
 
 // methods for PyMangleCapVec
 static PyMethodDef PyMangleCapVec_methods[] = { 
-    //{"set", (PyCFunction)PyMangleCapVec_set, METH_VARARGS, "set the cap data\n"},
+    {"size", (PyCFunction)PyMangleCapVec_size, METH_VARARGS, "get length of CapVec\n"},
+    {"_set_cap", (PyCFunction)PyMangleCapVec_set_cap, METH_VARARGS, "set the cap data at the specified index\n"},
     {NULL}
 };
 
