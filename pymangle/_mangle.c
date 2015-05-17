@@ -12,6 +12,201 @@
 #include "pixel.h"
 #include "rand.h"
 
+/*
+   Cap class
+*/
+struct PyMangleCap {
+    PyObject_HEAD
+
+    struct Cap cap;
+};
+
+/*
+
+  Initalize the mangle cap.
+
+  In order to support long double, the input is a numpy array of length 4
+  and type numpy.longdouble.  We cannot pass scalars because PyArg_ParseTuple
+  only supports double
+
+  we are assuming this longdouble corresponds to c long double
+
+  No error checking is performed here, do that in python
+ */
+
+static int
+PyMangleCap_init(struct PyMangleCap* self, PyObject *args, PyObject *kwds)
+{
+    struct Cap *cap=NULL;
+    PyObject* arr_obj=NULL;
+    long double *arr_data=NULL;
+
+
+    if (!PyArg_ParseTuple(args, (char*)"O", &arr_obj)) {
+        return -1;
+    }
+
+    arr_data = (long double *) PyArray_DATA( (PyArrayObject*) arr_obj);
+
+    cap=&self->cap;
+    cap->x=arr_data[0];
+    cap->y=arr_data[1];
+    cap->z=arr_data[2];
+    cap->cm=arr_data[3];
+
+    return 0;
+}
+
+static void
+PyMangleCap_dealloc(struct PyMangleCap* self)
+{
+
+#if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
+    Py_TYPE(self)->tp_free((PyObject*)self);
+#else
+    // old way, removed in python 3
+    self->ob_type->tp_free((PyObject*)self);
+#endif
+
+}
+
+
+static PyObject *
+PyMangleCap_repr(struct PyMangleCap* self) {
+    char buff[128];
+    struct Cap* cap=&self->cap;
+
+    snprintf(buff,128,
+             "MangleCap %.16Lg %.16Lg %.16Lg %.16Lg",
+             cap->x,
+             cap->y,
+             cap->z,
+             cap->cm);
+
+#if PY_MAJOR_VERSION >= 3
+    return PyUnicode_FromString((const char*)buff);
+#else
+    return PyString_FromString((const char*)buff);
+#endif
+}
+
+// methods for PyMangleCap
+static PyMethodDef PyMangleCap_methods[] = { {NULL}};
+
+// the type definition for PyMangleCap
+
+static PyTypeObject PyMangleCapType = {
+#if PY_MAJOR_VERSION >= 3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+#endif
+    "_mangle.Mangle",             /*tp_name*/
+    sizeof(struct PyMangleCap), /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    (destructor)PyMangleCap_dealloc, /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    //0,                         /*tp_repr*/
+    (reprfunc)PyMangleCap_repr,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    "A class to work with Mangle masks.\n"
+        "\n"
+        "construction\n"
+        "    import pymangle\n"
+        "    m=pymangle.Mangle(mask_file, verbose=False)\n"
+        "\n"
+        "\n"
+        "read-only properties\n"
+        "--------------------\n"
+        "    filename\n"
+        "    area\n"
+        "    npoly\n"
+        "    is_pixelized\n"
+        "    pixeltype\n"
+        "    pixelres\n"
+        "    maxpix\n"
+        "    is_snapped\n"
+        "    is_balkanized\n"
+        "    weightfile\n"
+        "\n"
+        "See docs for each property for more details.\n"
+        "\n"
+        "methods\n"
+        "----------------------\n"
+        "    polyid(ra,dec)\n"
+        "    weight(ra,dec)\n"
+        "    polyid_and_weight(ra,dec)\n"
+        "    contains(ra,dec)\n"
+        "    genrand(nrand)\n"
+        "    genrand_range(nrand,ramin,ramax,decmin,decmax)\n"
+        "    calc_simplepix(ra,dec)\n"
+        "    read_weights(weightfile)\n"
+        "\n"
+        "getters (correspond to properties above)\n"
+        "----------------------------------------\n"
+        "    get_filename()\n"
+        "    get_weightfile()\n"
+        "    get_area()\n"
+        "    get_npoly()\n"
+        "    get_is_pixelized()\n"
+        "    get_pixeltype()\n"
+        "    get_pixelres()\n"
+        "    get_maxpix()\n"
+        "    get_is_snapped()\n"
+        "    get_is_balkanized()\n"
+        "    get_pixels()\n"
+        "    get_weights()\n"
+        "    get_areas()\n"
+        "\n"
+        "setter (corresponding to property above)\n"
+        "----------------------------------------\n"
+        "    set_weights(weights)\n"
+        "\n"
+        "See docs for each method for more detail.\n",
+    0,                     /* tp_traverse */
+    0,                     /* tp_clear */
+    0,                     /* tp_richcompare */
+    0,                     /* tp_weaklistoffset */
+    0,                     /* tp_iter */
+    0,                     /* tp_iternext */
+    PyMangleCap_methods,             /* tp_methods */
+    0,             /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    //0,     /* tp_init */
+    (initproc)PyMangleCap_init,      /* tp_init */
+    0,                         /* tp_alloc */
+    PyType_GenericNew,                 /* tp_new */
+};
+
+
+
+
+
+
+/* 
+
+   overall MangleMask class
+   
+*/
+
 
 struct PyMangleMask {
     PyObject_HEAD
@@ -636,10 +831,10 @@ static double get_quad_frac_masked(struct PyMangleMask* self,
 {
     int status=1;
     long nmasked=0, i;
-    double frac_masked;
-    long double ra, dec, weight;
-    int64 poly_id;
-    struct Point pt;
+    double frac_masked=0;
+    long double ra=0, dec=0, weight=0;
+    int64 poly_id=0;
+    struct Point pt={0};
 
     for (i=0; i<nrand; i++) {
         genrand_cap_radec(rcap, quadrant, &ra, &dec);
@@ -1457,7 +1652,7 @@ static PyMethodDef mangle_methods[] = {
     static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "_mangle",      /* m_name */
-        "Defines the Mangle class and some methods",  /* m_doc */
+        "Defines Mangle related classes and some methods",  /* m_doc */
         -1,                  /* m_size */
         mangle_methods,    /* m_methods */
         NULL,                /* m_reload */
@@ -1480,9 +1675,13 @@ init_mangle(void)
     PyObject* m;
 
 
+    PyMangleCapType.tp_new = PyType_GenericNew;
     PyMangleMaskType.tp_new = PyType_GenericNew;
 
 #if PY_MAJOR_VERSION >= 3
+    if (PyType_Ready(&PyMangleCapType) < 0) {
+        return NULL;
+    }
     if (PyType_Ready(&PyMangleMaskType) < 0) {
         return NULL;
     }
@@ -1495,6 +1694,9 @@ init_mangle(void)
     if (PyType_Ready(&PyMangleMaskType) < 0) {
         return;
     }
+    if (PyType_Ready(&PyMangleCapType) < 0) {
+        return;
+    }
     m = Py_InitModule3("_mangle", mangle_methods, 
             "This module defines a class to work with Mangle masks.\n"
             "and some generic functions.\n"
@@ -1505,6 +1707,7 @@ init_mangle(void)
 #endif
 
     Py_INCREF(&PyMangleMaskType);
+    PyModule_AddObject(m, "Cap", (PyObject *)&PyMangleCapType);
     PyModule_AddObject(m, "Mangle", (PyObject *)&PyMangleMaskType);
 
     import_array();

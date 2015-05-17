@@ -239,3 +239,24 @@ class Mangle(_mangle.Mangle):
     is_balkanized = property(_mangle.Mangle.get_is_balkanized,doc="True if balkanized.")
     areas = property(_mangle.Mangle.get_areas,doc="Area of pixels in mask.")
     weights = property(_mangle.Mangle.get_weights,_set_weights,doc="Weights of pixels in mask.")
+
+class Cap(_mangle.Cap):
+    """
+    Class to represent a mangle Cap
+
+    In order to support 128 bit, the input is an array [x,y,z,cm]
+    """
+    def __init__(self, data):
+        """
+        Initialize the cap with 128-bit data
+
+        parameters
+        ----------
+        data: array or sequence
+            An length 4 array of 128 bit floats, or convertable to that.
+        """
+        data = array(data, ndmin=1, dtype='f16', copy=False)
+        if data.size != 4:
+            raise ValueError("capdata must be an array of length 4, got %d" % data.size)
+
+        super(Cap,self).__init__(data)
