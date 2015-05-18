@@ -223,60 +223,59 @@ int mangle_read_weights(struct MangleMask* self, const char* weightfile)
 
     struct Polygon *ply=NULL;
 
-    
+
 
     if ((wfptr = fopen(weightfile,"r")) == NULL) {
-	wlog("Failed to open file for reading: %s\n",weightfile);
-	status=0;
-	goto _mangle_readweight_bail;
+        wlog("Failed to open file for reading: %s\n",weightfile);
+        status=0;
+        goto _mangle_readweight_bail;
     }
 
     // allocate memory
     if ((weight_new = (long double *)calloc(self->npoly,sizeof(long double))) == NULL) {
-	wlog("Failed to allocate memory for reading %s\n",weightfile);
-	fclose(wfptr);
-	status=0;
-	goto _mangle_readweight_bail;
+        wlog("Failed to allocate memory for reading %s\n",weightfile);
+        fclose(wfptr);
+        status=0;
+        goto _mangle_readweight_bail;
     }
-    
+
     // read in the lines
 
     for (i=0;i<self->npoly;i++) {
-	if (1 != fscanf(wfptr,"%Lf",&(weight_new[i]))) {
-	    wlog("Number of weights in weightfile %s less than number of polygons (%ld)\n",weightfile,self->npoly);
-	    fclose(wfptr);
-	    status=0;
-	    free(weight_new);
-	    goto _mangle_readweight_bail;
-	}
+        if (1 != fscanf(wfptr,"%Lf",&(weight_new[i]))) {
+            wlog("Number of weights in weightfile %s less than number of polygons (%ld)\n",weightfile,self->npoly);
+            fclose(wfptr);
+            status=0;
+            free(weight_new);
+            goto _mangle_readweight_bail;
+        }
     }
 
     // are there any extra lines?  produce error.
     if (fscanf(wfptr,"%Lf",&test) == 1) {
-	wlog("Number of weights in weightfile %s greater than number of polygons (%ld)\n",weightfile,self->npoly);
-	fclose(wfptr);
-	status=0;
-	free(weight_new);
-	goto _mangle_readweight_bail;
+        wlog("Number of weights in weightfile %s greater than number of polygons (%ld)\n",weightfile,self->npoly);
+        fclose(wfptr);
+        status=0;
+        free(weight_new);
+        goto _mangle_readweight_bail;
     }
 
     // and copy...
-    ply = &self->poly_vec->data[0];
     for (i=0;i<self->npoly;i++) {
-	ply->weight = weight_new[i];
-	ply++;
+        ply = &self->poly_vec->data[i];
+        ply->weight = weight_new[i];
     }
 
     // free memory
     free(weight_new);
-    
+
     // close file
     fclose(wfptr);
 
     // and because it all worked we can set the filename
     snprintf(self->weightfile,_MANGLE_MAX_FILELEN,"%s",weightfile);
 
- _mangle_readweight_bail:
+_mangle_readweight_bail:
     return status;
 }
 
@@ -285,33 +284,32 @@ int mangle_set_weights(struct MangleMask* self, long double *weights) {
     int64 i;
     struct Polygon *ply=NULL;
 
-    ply = &self->poly_vec->data[0];
     for (i=0;i<self->npoly;i++) {
-	ply->weight = weights[i];
-	ply++;
+        ply = &self->poly_vec->data[i];
+        ply->weight = weights[i];
     }
 
     memset(self->weightfile, 0, sizeof(self->weightfile));
-    
+
     return status;
 }
 
 void mangle_calc_area_and_maxpix(struct MangleMask* self)
 {
+    struct Polygon* ply=NULL;
+
     if (self) {
         self->total_area = 0.0;
         if (self->poly_vec) {
-            struct Polygon* ply=NULL;
             size_t i=0;
-            ply = &self->poly_vec->data[0];
             for (i=0; i<self->poly_vec->size; i++) {
+                ply = &self->poly_vec->data[i];
                 self->total_area += ply->area;
 
                 if (ply->pixel_id > self->maxpix) {
                     self->maxpix = ply->pixel_id;
                 }
 
-                ply++;
             }
         }
     }
@@ -333,10 +331,12 @@ int set_pixel_map(struct MangleMask *self)
             status = 0;
             goto _set_pixel_map_errout;
         } else {
+
             if (self->verbose)
                 fprintf(stderr,"Filling pixel map\n");
-            ply=&self->poly_vec->data[0];
+
             for (ipoly=0; ipoly<self->poly_vec->size; ipoly++) {
+                ply=&self->poly_vec->data[ipoly];
                 i64stack_push(self->pixel_list_vec->data[ply->pixel_id], ipoly);
                 if (self->verbose > 2) {
                     fprintf(stderr,
@@ -344,7 +344,6 @@ int set_pixel_map(struct MangleMask *self)
                             ipoly,ply->pixel_id,
                             self->pixel_list_vec->data[ply->pixel_id]->size);
                 }
-                ply++;
             }
         }
     }
@@ -377,14 +376,13 @@ int mangle_polyid_and_weight_nopix(struct MangleMask *self,
     *poly_id=-1;
     *weight=0.0;
 
-    ply = &self->poly_vec->data[0];
     for (i=0; i<self->poly_vec->size; i++) {
+        ply = &self->poly_vec->data[i];
         if (is_in_poly(ply, pt)) {
             *poly_id=ply->poly_id;
             *weight=ply->weight;
             break;
         }
-        ply++;
     }
     return 1;
 }
