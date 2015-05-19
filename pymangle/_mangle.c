@@ -471,7 +471,7 @@ PyManglePolygon_init(struct PyManglePolygon* self, PyObject *args, PyObject *kwd
     self->poly.pixel_id = pixel_id;
     self->poly.weight   = wt_data[0];
 
-    // we need garea to calculate this I think
+    // we need garea to calculate this
     self->poly.area = -1.0;
 
     self->poly.cap_vec = CapVec_copy(cap_vec_st->cap_vec);
