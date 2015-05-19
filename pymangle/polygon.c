@@ -31,10 +31,9 @@ struct PolygonVec* PolygonVec_free(struct PolygonVec* self)
     if (self != NULL) {
         if (self->data!= NULL) {
 
-            ply=self->data;
             for (i=0; i<self->size; i++) {
+                ply=&self->data[i];
                 ply->cap_vec = CapVec_free(ply->cap_vec);
-                ply++;
             }
             free(self->data);
 
@@ -53,13 +52,12 @@ int is_in_poly(struct Polygon* ply, struct Point* pt)
     int inpoly=1;
 
 
-    cap = &ply->cap_vec->data[0];
     for (i=0; i<ply->cap_vec->size; i++) {
+        cap = &ply->cap_vec->data[i];
         inpoly = inpoly && is_in_cap(cap, pt);
         if (!inpoly) {
             break;
         }
-        cap++;
     }
     return inpoly;
 }
@@ -133,14 +131,14 @@ int read_polygon(FILE* fptr, struct Polygon* ply)
         goto _read_single_polygon_errout;
     }
 
-    cap = &ply->cap_vec->data[0];
     for (i=0; i<ncaps; i++) {
+        cap = &ply->cap_vec->data[i];
         status = read_cap(fptr, cap);
         if (status != 1) {
             goto _read_single_polygon_errout;
         }
-        cap++;
     }
+
 _read_single_polygon_errout:
     return status;
 }
