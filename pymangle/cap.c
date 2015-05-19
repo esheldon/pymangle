@@ -49,7 +49,26 @@ struct CapVec* CapVec_copy(const struct CapVec* self)
     return cap_vec;
 }
 
+void CapVec_minarea(const struct CapVec* self,
+                    size_t *index,
+                    long double* area_min)
+{
+    struct Cap* cap=NULL;
+    size_t i=0;
+    double area=0;
 
+    *area_min = 2.;
+    for (i = 0; i < self->size; i++) {
+        cap = &self->data[i];
+
+        area = (cap->cm >= 0.) ? cap->cm : 2. + cap->cm;
+        if (area <= *area_min) {
+            *index= i;
+            *area_min = area;
+        }
+    }
+
+}
 
 void cap_set(struct Cap* self,
              long double x,

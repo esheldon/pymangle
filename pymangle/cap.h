@@ -34,6 +34,16 @@ struct CapVec* CapVec_new(size_t n);
 struct CapVec* CapVec_free(struct CapVec* self);
 struct CapVec* CapVec_copy(const struct CapVec* self);
 
+/*
+   Find the smallest cap in the cap vector
+
+   Adapted from cmminf © A J S Hamilton 2001
+*/
+
+void CapVec_minarea(const struct CapVec* self,
+                    size_t *index,
+                    long double* area_min);
+
 void cap_set(struct Cap* self,
              long double x,
              long double y,
