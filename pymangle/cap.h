@@ -40,9 +40,9 @@ struct CapVec* CapVec_copy(const struct CapVec* self);
    Adapted from cmminf © A J S Hamilton 2001
 */
 
-void CapVec_minarea(const struct CapVec* self,
-                    size_t *index,
-                    long double* area_min);
+void CapVec_min_cm(const struct CapVec* self,
+                   size_t *index,
+                   long double* cm_min);
 
 void cap_set(struct Cap* self,
              long double x,

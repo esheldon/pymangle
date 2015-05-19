@@ -49,22 +49,27 @@ struct CapVec* CapVec_copy(const struct CapVec* self)
     return cap_vec;
 }
 
-void CapVec_minarea(const struct CapVec* self,
-                    size_t *index,
-                    long double* area_min)
+void CapVec_min_cm(const struct CapVec* self,
+                   size_t *index,
+                   long double* cm_min)
 {
     struct Cap* cap=NULL;
     size_t i=0;
-    double area=0;
+    double cm=0;
 
-    *area_min = 2.;
+    *cm_min = 2.;
     for (i = 0; i < self->size; i++) {
         cap = &self->data[i];
 
-        area = (cap->cm >= 0.) ? cap->cm : 2. + cap->cm;
-        if (area <= *area_min) {
+        if (cap->cm >= 0.0) {
+            cm = cap->cm;
+        } else {
+            cm = 2. + cap->cm;
+        }
+
+        if (cm <= *cm_min) {
             *index= i;
-            *area_min = area;
+            *cm_min = cm;
         }
     }
 
@@ -126,13 +131,14 @@ void snprint_cap(const struct Cap* self, char *buff, size_t n)
 int is_in_cap(struct Cap* cap, struct Point* pt)
 {
     int incap=0;
-    long double cdot;
+    long double cdotm=0;
 
-    cdot = 1.0 - cap->x*pt->x - cap->y*pt->y - cap->z*pt->z;
+    // cm = 1-cos(theta) where theta is the cap opening angle
+    cdotm = 1.0 - cap->x*pt->x - cap->y*pt->y - cap->z*pt->z;
     if (cap->cm < 0.0) {
-        incap = cdot > (-cap->cm);
+        incap = cdotm > (-cap->cm);
     } else {
-        incap = cdot < cap->cm;
+        incap = cdotm < cap->cm;
     }
 
     return incap;
