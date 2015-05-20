@@ -37,7 +37,7 @@ struct CapVec* CapVec_copy(const struct CapVec* self);
 /*
    Find the smallest cap in the cap vector
 
-   Adapted from cmminf © A J S Hamilton 2001
+   Adapted from cmminf A J S Hamilton 2001
 */
 
 void CapVec_min_cm(const struct CapVec* self,
