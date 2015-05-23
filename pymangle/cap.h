@@ -11,8 +11,19 @@ struct Cap {
     long double cm;
 };
 
+#define CAPVEC_INITCAP 1
+#define CAPVEC_PUSH_REALLOC_MULTVAL 2
+
+// ->size and ->data are considered exposed
 struct CapVec {
+    // the visible size of the vector, can be zero
     size_t size;
+
+    // the capacity of the vector.  For valid vectors this
+    // will always be >= 1
+    size_t capacity;
+
+    // the underlying data array
     struct Cap* data;
 };
 
@@ -30,8 +41,44 @@ struct CapForRand {
                        // can calculate from a Cap with acosl(1-cm)
 };
 
+// new capvec with specified number of elements
 struct CapVec* CapVec_new(size_t n);
+// new capvec with the default capacity but size 0
+struct CapVec* CapVec_empty(void);
+
+// make sure the backing data array has at least the requested
+// number of elements
+int CapVec_reserve(struct CapVec* self, size_t new_capacity);
+
+// resize the vector; if the new size is larger than the old
+// *capacity*, then a reallocation is performed, otherwise
+// the underlying data array is not changed, only the size
+// member is changed
+int CapVec_resize(struct CapVec* self, size_t new_size);
+
+// set the size to zero and the capacity to the default (CAPVEC_INITCAP)
+int CapVec_clear(struct CapVec* self);
+
+// push a new Cap onto the end of the vector, and increment the size
+// member
+//
+// the data of the cap is copied
+//
+// the capacity can be changed if the new size exceeds the capacity
+// resulting in a reallocation
+int CapVec_push(struct CapVec* self, const struct Cap* cap);
+
+// return a copy of the last Cap in the vector and decrement the size
+// member
+//
+// If the size is already 0, the return value is just the remaining
+// element at position 0, which might be garbage
+struct Cap CapVec_pop(struct CapVec* self);
+
+// completely free all memory and return NULL
 struct CapVec* CapVec_free(struct CapVec* self);
+
+// get a full copy of the vector in new CapVec
 struct CapVec* CapVec_copy(const struct CapVec* self);
 
 /*

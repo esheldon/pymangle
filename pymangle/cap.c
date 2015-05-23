@@ -6,8 +6,7 @@
 #include "point.h"
 #include "defs.h"
 
-struct CapVec* 
-CapVec_new(size_t n) 
+struct CapVec* CapVec_new(size_t n) 
 {
     struct CapVec* self=NULL;
 
@@ -15,14 +14,39 @@ CapVec_new(size_t n)
     if (self == NULL) {
         return NULL;
     }
-    self->data = calloc(n, sizeof(struct Cap));
+
+    self->capacity = n;
+    self->size = n;
+
+    self->data = calloc(self->capacity, sizeof(struct Cap));
     if (self->data == NULL) {
         free(self);
         return NULL;
     }
-    self->size = n;
+
     return self;
 }
+
+struct CapVec* CapVec_empty(void) 
+{
+    struct CapVec* self=NULL;
+
+    self=calloc(1, sizeof(struct CapVec));
+    if (self == NULL) {
+        return NULL;
+    }
+
+    self->capacity = CAPVEC_INITCAP;
+    self->data = calloc(self->capacity, sizeof(struct Cap));
+    if (self->data == NULL) {
+        free(self);
+        return NULL;
+    }
+    self->size = 0;
+    return self;
+}
+
+
 
 struct CapVec* CapVec_free(struct CapVec* self)
 {
@@ -32,6 +56,107 @@ struct CapVec* CapVec_free(struct CapVec* self)
         self=NULL;
     }
     return self;
+}
+
+
+static int CapVec_realloc(struct CapVec* self, size_t new_capacity)
+{
+    size_t old_capacity=self->capacity;
+
+    if (new_capacity < old_capacity) {
+        self->size=new_capacity;
+    }
+
+    if (new_capacity < 1) new_capacity=1;
+
+    size_t sizeof_type = sizeof(struct Cap);
+
+    if (new_capacity != old_capacity) {
+        self->data = realloc(self->data, new_capacity*sizeof_type);
+        if (!self->data) {
+            fprintf(stderr, "failed to reallocate\n");
+            return 0;
+        }
+        if (new_capacity > old_capacity) {
+            // zero out additional elements if new capacity is larger
+            size_t num_new_bytes = (new_capacity-old_capacity)*sizeof_type;
+            memset(self->data + old_capacity, 0, num_new_bytes);
+        }
+
+        self->capacity = new_capacity;
+    }
+
+    return 1;
+}
+
+int CapVec_reserve(struct CapVec* self, size_t new_capacity)
+{
+    int status=1;
+    if (new_capacity > self->capacity) {
+        status=CapVec_realloc(self, new_capacity);
+    }
+    return status;
+}
+
+int CapVec_resize(struct CapVec* self, size_t new_size)
+{
+    int status=1;
+    if (new_size > self->capacity) {
+        status=CapVec_realloc(self, new_size);
+    }
+    if (status) {
+        self->size=new_size;
+    }
+
+    return status;
+}
+
+int CapVec_clear(struct CapVec* self)
+{
+    int status=0;
+    status=CapVec_realloc(self, CAPVEC_INITCAP);
+
+    if (status) {
+        self->size=0;
+    }
+
+    return status;
+}
+
+int CapVec_push(struct CapVec* self, const struct Cap* cap)
+{
+    int status=1;
+    if (self->size == self->capacity) {
+        size_t new_capacity=0;
+        if (self->capacity==0) {
+            new_capacity=CAPVEC_INITCAP;
+        } else {
+            new_capacity = self->capacity*CAPVEC_PUSH_REALLOC_MULTVAL;
+        }
+        status=CapVec_realloc(self, new_capacity);
+    }
+
+    if (status) {
+        self->size++;
+        self->data[self->size-1] = *cap;
+    }
+
+    return status;
+}
+
+struct Cap CapVec_pop(struct CapVec* self)
+{
+    size_t index=0;
+    
+    if (self->size > 0) {
+        index = self->size-1;
+        self->size--;
+    } else {
+        fprintf(stderr,
+                "CapVecError: attempt to pop from empty vector, returning garbage\n");
+    }
+
+    return self->data[index];
 }
 
 struct CapVec* CapVec_copy(const struct CapVec* self)
