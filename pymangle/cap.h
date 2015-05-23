@@ -41,13 +41,15 @@ struct CapForRand {
                        // can calculate from a Cap with acosl(1-cm)
 };
 
-// new capvec with specified number of elements
+// new capvec with specified number of elements.   All data
+// are zeroed
 struct CapVec* CapVec_new(size_t n);
-// new capvec with the default capacity but size 0
+
+// new capvec with the default capacity (CAPVEC_INITCAP) but size 0
 struct CapVec* CapVec_empty(void);
 
 // make sure the backing data array has at least the requested
-// number of elements
+// number of elements.  The ->size member is unchanged
 int CapVec_reserve(struct CapVec* self, size_t new_capacity);
 
 // resize the vector; if the new size is larger than the old
@@ -56,7 +58,8 @@ int CapVec_reserve(struct CapVec* self, size_t new_capacity);
 // member is changed
 int CapVec_resize(struct CapVec* self, size_t new_size);
 
-// set the size to zero and the capacity to the default (CAPVEC_INITCAP)
+// set the size to zero and the reallocate to the default capacity
+// (CAPVEC_INITCAP) this means the data should be considered lost
 int CapVec_clear(struct CapVec* self);
 
 // push a new Cap onto the end of the vector, and increment the size
