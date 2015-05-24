@@ -206,7 +206,7 @@ static PyTypeObject PyMangleCapType = {
 struct PyMangleCapVec {
     PyObject_HEAD
 
-    struct CapVec* cap_vec;
+    struct CapVec* caps;
 };
 
 static int
@@ -218,8 +218,8 @@ PyMangleCapVec_init(struct PyMangleCapVec* self, PyObject *args, PyObject *kwds)
         return -1;
     }
 
-    self->cap_vec = capvec_zeros( (size_t) n);
-    if (self->cap_vec == NULL) {
+    self->caps = capvec_zeros( (size_t) n);
+    if (self->caps == NULL) {
         PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
         return -1;
     }
@@ -231,7 +231,7 @@ static PyObject *
 PyMangleCapVec_repr(struct PyMangleCapVec* self) {
     char buff[64];
 
-    snprintf(buff,64, "MangleCapVec, ncaps: %lu", self->cap_vec->size);
+    snprintf(buff,64, "MangleCapVec, ncaps: %lu", self->caps->size);
 
 #if PY_MAJOR_VERSION >= 3
     return PyUnicode_FromString((const char*)buff);
@@ -245,7 +245,7 @@ static void
 PyMangleCapVec_dealloc(struct PyMangleCapVec* self)
 {
 
-    self->cap_vec=capvec_free(self->cap_vec);
+    self->caps=capvec_free(self->caps);
 
 #if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
     Py_TYPE(self)->tp_free((PyObject*)self);
@@ -258,7 +258,7 @@ PyMangleCapVec_dealloc(struct PyMangleCapVec* self)
 static PyObject*
 PyMangleCapVec_size(struct PyMangleCapVec* self)
 {
-    return Py_BuildValue("n",(Py_ssize_t) self->cap_vec->size);
+    return Py_BuildValue("n",(Py_ssize_t) self->caps->size);
 }
 
 
@@ -278,7 +278,7 @@ PyMangleCapVec_set_cap(struct PyMangleCapVec* self, PyObject *args, PyObject *kw
 
     cap_obj = (struct PyMangleCap *) cap_pyobj;
 
-    cap_set(&self->cap_vec->data[index],
+    cap_set(&self->caps->data[index],
             cap_obj->cap.x,
             cap_obj->cap.y,
             cap_obj->cap.z,
@@ -303,7 +303,7 @@ PyMangleCapVec_get_cap(struct PyMangleCapVec* self, PyObject *args, PyObject *kw
     }
 
 
-    cap = &self->cap_vec->data[index];
+    cap = &self->caps->data[index];
 
     cap_copy = _PyObject_New(type);
     cap_st=(struct PyMangleCap *) cap_copy;
@@ -456,16 +456,16 @@ PyManglePolygon_init(struct PyManglePolygon* self, PyObject *args, PyObject *kwd
     PyObject* wt_arr_obj=NULL;
     long double *wt_data=NULL;
 
-    PyObject *cap_vec_obj=NULL;
-    struct PyMangleCapVec *cap_vec_st=NULL;
+    PyObject *caps_obj=NULL;
+    struct PyMangleCapVec *caps_st=NULL;
 
-    if (!PyArg_ParseTuple(args, (char*)"llOO", &poly_id, &pixel_id, &wt_arr_obj, &cap_vec_obj)) {
+    if (!PyArg_ParseTuple(args, (char*)"llOO", &poly_id, &pixel_id, &wt_arr_obj, &caps_obj)) {
         return -1;
     }
 
     wt_data = (long double *) PyArray_DATA( (PyArrayObject*) wt_arr_obj);
 
-    cap_vec_st=(struct PyMangleCapVec *) cap_vec_obj;
+    caps_st=(struct PyMangleCapVec *) caps_obj;
 
     self->poly.poly_id  = poly_id;
     self->poly.pixel_id = pixel_id;
@@ -474,8 +474,8 @@ PyManglePolygon_init(struct PyManglePolygon* self, PyObject *args, PyObject *kwd
     // we need garea to calculate this
     self->poly.area = -1.0;
 
-    self->poly.cap_vec = capvec_copy(cap_vec_st->cap_vec);
-    if (self->poly.cap_vec == NULL) {
+    self->poly.caps = capvec_copy(caps_st->caps);
+    if (self->poly.caps == NULL) {
         PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
         return -1;
     }
@@ -487,7 +487,7 @@ static void
 PyManglePolygon_dealloc(struct PyManglePolygon* self)
 {
 
-    self->poly.cap_vec=capvec_free(self->poly.cap_vec);
+    self->poly.caps=capvec_free(self->poly.caps);
 
 #if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
     Py_TYPE(self)->tp_free((PyObject*)self);
@@ -508,7 +508,7 @@ PyManglePolygon_repr(struct PyManglePolygon* self) {
              self->poly.pixel_id,
              self->poly.weight,
              self->poly.area,
-             self->poly.cap_vec->size);
+             self->poly.caps->size);
 
 #if PY_MAJOR_VERSION >= 3
     return PyUnicode_FromString((const char*)buff);
@@ -521,7 +521,7 @@ PyManglePolygon_repr(struct PyManglePolygon* self) {
 static PyObject*
 PyManglePolygon_size(struct PyManglePolygon* self)
 {
-    return Py_BuildValue("n",(Py_ssize_t) self->poly.cap_vec->size);
+    return Py_BuildValue("n",(Py_ssize_t) self->poly.caps->size);
 }
 
 static PyObject*
@@ -540,7 +540,7 @@ PyManglePolygon_get_cap(struct PyManglePolygon* self, PyObject *args, PyObject *
     }
 
 
-    cap = &self->poly.cap_vec->data[index];
+    cap = &self->poly.caps->data[index];
 
     cap_copy = _PyObject_New(type);
     cap_st=(struct PyMangleCap *) cap_copy;

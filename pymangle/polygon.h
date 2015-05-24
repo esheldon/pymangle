@@ -16,7 +16,7 @@ struct Polygon {
     int area_set;
     long double area; // in str
 
-    struct CapVec* cap_vec;
+    struct CapVec* caps;
 
 };
 
@@ -42,10 +42,10 @@ int polygon_resize(struct Polygon* self, size_t new_size);
 // All metadata reset, caps cleared
 int polygon_clear(struct Polygon* self);
 
-// push a new cap onto the polygon (underlying cap_vec vector)
+// push a new cap onto the polygon (underlying caps vector)
 int polygon_push_cap(struct Polygon* self, const struct Cap* cap);
 
-// return a copy of the last Cap in the cap_vec vector and decrement the size
+// return a copy of the last Cap in the caps vector and decrement the size
 // member
 //
 // If the size is already 0, the return value is just the remaining element at

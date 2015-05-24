@@ -19,8 +19,8 @@ struct Polygon* polygon_new(void)
     self->weight=-9999;
     self->area=-9999;
 
-    self->cap_vec = capvec_new();
-    if (self->cap_vec==NULL) {
+    self->caps = capvec_new();
+    if (self->caps==NULL) {
         free(self);
         return NULL;
     }
@@ -42,8 +42,8 @@ struct Polygon* polygon_zeros(size_t n)
     self->weight=-9999;
     self->area=-9999;
 
-    self->cap_vec = capvec_zeros(n);
-    if (self->cap_vec==NULL) {
+    self->caps = capvec_zeros(n);
+    if (self->caps==NULL) {
         free(self);
         return NULL;
     }
@@ -55,8 +55,8 @@ struct Polygon* polygon_zeros(size_t n)
 struct Polygon* polygon_free(struct Polygon* self)
 {
     if (self) {
-        if (self->cap_vec) {
-            self->cap_vec=capvec_free(self->cap_vec);
+        if (self->caps) {
+            self->caps=capvec_free(self->caps);
         }
         free(self);
         self=NULL;
@@ -76,8 +76,8 @@ struct Polygon* polygon_copy(const struct Polygon* self)
     memcpy(poly, self, sizeof(struct Polygon));
 
     // now copy full cap vector
-    poly->cap_vec = capvec_copy(self->cap_vec);
-    if (!poly->cap_vec) {
+    poly->caps = capvec_copy(self->caps);
+    if (!poly->caps) {
         free(poly);
         poly=NULL;
         return poly;
@@ -90,7 +90,7 @@ int polygon_reserve(struct Polygon* self, size_t new_capacity)
 {
     int status=0;
 
-    status=capvec_reserve( self->cap_vec, new_capacity );
+    status=capvec_reserve( self->caps, new_capacity );
 
     return status;
 }
@@ -99,7 +99,7 @@ int polygon_resize(struct Polygon* self, size_t new_size)
 {
     int status=0;
 
-    status=capvec_resize( self->cap_vec, new_size );
+    status=capvec_resize( self->caps, new_size );
     // no need to alter area since zeros were added
 
     return status;
@@ -115,7 +115,7 @@ int polygon_clear(struct Polygon* self)
     self->area=-9999;
     self->area_set=0;
 
-    status=capvec_clear( self->cap_vec );
+    status=capvec_clear( self->caps );
 
     return status;
 }
@@ -124,7 +124,7 @@ int polygon_push_cap(struct Polygon* self, const struct Cap* cap)
 {
     int status=0;
 
-    status = capvec_push(self->cap_vec, cap);
+    status = capvec_push(self->caps, cap);
     return status;
 }
 
@@ -133,15 +133,15 @@ struct Cap polygon_pop_cap(struct Polygon* self)
 {
     size_t index=0;
     
-    if (self->cap_vec->size > 0) {
-        index = self->cap_vec->size-1;
-        self->cap_vec->size--;
+    if (self->caps->size > 0) {
+        index = self->caps->size-1;
+        self->caps->size--;
     } else {
         fprintf(stderr,
                 "CapVecError: attempt to pop from empty vector, returning garbage\n");
     }
 
-    return self->cap_vec->data[index];
+    return self->caps->data[index];
 }
 
 
@@ -153,8 +153,8 @@ int is_in_poly(struct Polygon* ply, struct Point* pt)
     int inpoly=1;
 
 
-    for (i=0; i<ply->cap_vec->size; i++) {
-        cap = &ply->cap_vec->data[i];
+    for (i=0; i<ply->caps->size; i++) {
+        cap = &ply->caps->data[i];
         inpoly = inpoly && is_in_cap(cap, pt);
         if (!inpoly) {
             break;
@@ -193,18 +193,18 @@ int read_into_polygon(FILE* fptr, struct Polygon* ply)
         goto _read_single_polygon_errout;
     }
 
-    if (ply->cap_vec) {
-        capvec_resize(ply->cap_vec, ncaps);
+    if (ply->caps) {
+        capvec_resize(ply->caps, ncaps);
     } else {
-        ply->cap_vec = capvec_zeros(ncaps);
-        if (ply->cap_vec == NULL) {
+        ply->caps = capvec_zeros(ncaps);
+        if (ply->caps == NULL) {
             status=0;
             goto _read_single_polygon_errout;
         }
     }
 
     for (i=0; i<ncaps; i++) {
-        cap = &ply->cap_vec->data[i];
+        cap = &ply->caps->data[i];
         status = read_cap(fptr, cap);
         if (status != 1) {
             goto _read_single_polygon_errout;
@@ -326,9 +326,9 @@ void print_polygon(FILE* fptr, struct Polygon* self)
         return;
 
     size_t ncaps=0;
-    struct CapVec* cap_vec=NULL;
-    cap_vec = self->cap_vec;
-    ncaps = cap_vec ? cap_vec->size : 0;
+    struct CapVec* caps=NULL;
+    caps = self->caps;
+    ncaps = caps ? caps->size : 0;
 
     fprintf(fptr,
             "polygon %ld ( %ld caps, %.18Lg weight, %ld pixel, %.18Lg str):\n",
@@ -337,7 +337,7 @@ void print_polygon(FILE* fptr, struct Polygon* self)
     if (ncaps > 0) {
         size_t i=0;
         for (i=0; i<ncaps; i++) {
-            struct Cap *cap = &cap_vec->data[i];
+            struct Cap *cap = &caps->data[i];
             print_cap(fptr,cap);
         }
     }
@@ -373,7 +373,7 @@ struct PolyVec* polyvec_free(struct PolyVec* self)
 
             for (i=0; i<self->size; i++) {
                 ply=&self->data[i];
-                ply->cap_vec = capvec_free(ply->cap_vec);
+                ply->caps = capvec_free(ply->caps);
             }
             free(self->data);
 
