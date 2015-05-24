@@ -20,18 +20,37 @@ struct Polygon {
 
 };
 
+// new polygon with capvec that has the default capacity (CAPVEC_INITCAP) but size 0
+// the metadata is -9999 with ->area_set==0
 struct Polygon* polygon_new(void);
+
+// similar to new() but n caps zerod according to capvec_zeros(n)
 struct Polygon* polygon_zeros(size_t n);
+
+// completely free all data
 struct Polygon* polygon_free(struct Polygon* self);
+
+// full copy of all metadata and caps
 struct Polygon* polygon_copy(const struct Polygon* self);
 
+// reserve the specified number of caps
 int polygon_reserve(struct Polygon* self, size_t new_capacity);
+
+// resize the underlying cap vector
 int polygon_resize(struct Polygon* self, size_t new_size);
 
 // All metadata reset, caps cleared
 int polygon_clear(struct Polygon* self);
 
+// push a new cap onto the polygon (underlying cap_vec vector)
 int polygon_push_cap(struct Polygon* self, const struct Cap* cap);
+
+// return a copy of the last Cap in the cap_vec vector and decrement the size
+// member
+//
+// If the size is already 0, the return value is just the remaining element at
+// position 0, which might be garbage
+
 struct Cap polygon_pop_cap(struct Polygon* self);
 
 
