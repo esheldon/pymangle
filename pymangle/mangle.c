@@ -32,9 +32,12 @@ struct MangleMask* mangle_free(struct MangleMask* self)
 void mangle_clear(struct MangleMask* self)
 {
     if (self != NULL) {
+
         free(self->filename);
         self->filename=NULL;
-	memset(self->weightfile, 0, sizeof(self->weightfile));
+
+        memset(self->weightfile, 0, sizeof(self->weightfile));
+
         self->poly_vec = PolygonVec_free(self->poly_vec);
         self->pixel_list_vec = PixelListVec_free(self->pixel_list_vec);
 
