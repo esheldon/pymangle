@@ -8,7 +8,7 @@
 
 struct MangleMask {
     int64 npoly;
-    struct PolygonVec* poly_vec;
+    struct PolyVec* poly_vec;
 
     long double total_area;
     int64 pixelres;

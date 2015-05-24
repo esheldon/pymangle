@@ -38,7 +38,7 @@ void mangle_clear(struct MangleMask* self)
 
         memset(self->weightfile, 0, sizeof(self->weightfile));
 
-        self->poly_vec = PolygonVec_free(self->poly_vec);
+        self->poly_vec = polyvec_free(self->poly_vec);
         self->pixel_list_vec = PixelListVec_free(self->pixel_list_vec);
 
         if (self->fptr != NULL) {

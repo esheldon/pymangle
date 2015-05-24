@@ -345,11 +345,11 @@ void print_polygon(FILE* fptr, struct Polygon* self)
 }
 
 
-struct PolygonVec* PolygonVec_new(size_t n) 
+struct PolyVec* polyvec_new(size_t n) 
 {
-    struct PolygonVec* self=NULL;
+    struct PolyVec* self=NULL;
 
-    self=calloc(1, sizeof(struct PolygonVec));
+    self=calloc(1, sizeof(struct PolyVec));
     if (self == NULL) {
         return NULL;
     }
@@ -364,7 +364,7 @@ struct PolygonVec* PolygonVec_new(size_t n)
     return self;
 }
 
-struct PolygonVec* PolygonVec_free(struct PolygonVec* self)
+struct PolyVec* polyvec_free(struct PolyVec* self)
 {
     struct Polygon* ply=NULL;
     size_t i=0;
@@ -384,14 +384,14 @@ struct PolygonVec* PolygonVec_free(struct PolygonVec* self)
     return self;
 }
 
-struct PolygonVec *read_polygons(FILE* fptr, size_t npoly)
+struct PolyVec *read_polygons(FILE* fptr, size_t npoly)
 {
     int status=1;
     char buff[_MANGLE_SMALL_BUFFSIZE];
-    struct PolygonVec *self=NULL;
+    struct PolyVec *self=NULL;
     size_t i=0;
 
-    self = PolygonVec_new(npoly);
+    self = polyvec_new(npoly);
     if (!self) {
         status=0;
         wlog("could not allocate %lu polygons\n", npoly);
@@ -436,7 +436,7 @@ _read_polygons_bail:
 
 
 
-void print_polygons(FILE* fptr, struct PolygonVec *self)
+void print_polygons(FILE* fptr, struct PolyVec *self)
 {
     if (self) {
         size_t i;

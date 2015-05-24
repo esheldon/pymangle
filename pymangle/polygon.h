@@ -45,14 +45,14 @@ int scan_expected_value(FILE* fptr, char* buff, const char* expected_value);
 
 void print_polygon(FILE* fptr, struct Polygon* self);
 
-struct PolygonVec {
+struct PolyVec {
     size_t size;
     struct Polygon* data;
 };
 
-struct PolygonVec* PolygonVec_new(size_t n);
-struct PolygonVec* PolygonVec_free(struct PolygonVec* self);
-struct PolygonVec *read_polygons(FILE* fptr, size_t npoly);
-void print_polygons(FILE* fptr, struct PolygonVec *self);
+struct PolyVec* polyvec_new(size_t n);
+struct PolyVec* polyvec_free(struct PolyVec* self);
+struct PolyVec *read_polygons(FILE* fptr, size_t npoly);
+void print_polygons(FILE* fptr, struct PolyVec *self);
 
 #endif
