@@ -282,7 +282,13 @@ void CapVec_min_cm(const struct CapVec* self,
 long double CapVec_area(const struct CapVec* self, long double *tol)
 {
     long double area=0;
+    // static work structure
+    static struct CapVec* dcaps=NULL;
+    size_t index=0;
+    long double cm_min=0;
+    long double darea=0;
 
+    CapVec_min_cm(self, &index, &cm_min);
     return area;
 }
 
