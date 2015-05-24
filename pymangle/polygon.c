@@ -5,45 +5,6 @@
 #include "cap.h"
 #include "point.h"
 
-struct PolygonVec* PolygonVec_new(size_t n) 
-{
-    struct PolygonVec* self=NULL;
-
-    self=calloc(1, sizeof(struct PolygonVec));
-    if (self == NULL) {
-        return NULL;
-    }
-    // pointers will be NULL (0)
-    self->data = calloc(n, sizeof(struct Polygon));
-    if (self->data == NULL) {
-        free(self);
-        return NULL;
-    }
-
-    self->size = n;
-    return self;
-}
-
-struct PolygonVec* PolygonVec_free(struct PolygonVec* self)
-{
-    struct Polygon* ply=NULL;
-    size_t i=0;
-    if (self != NULL) {
-        if (self->data!= NULL) {
-
-            for (i=0; i<self->size; i++) {
-                ply=&self->data[i];
-                ply->cap_vec = CapVec_free(ply->cap_vec);
-            }
-            free(self->data);
-
-        }
-        free(self);
-        self=NULL;
-    }
-    return self;
-}
-
 int is_in_poly(struct Polygon* ply, struct Point* pt)
 {
     size_t i=0;
@@ -62,58 +23,25 @@ int is_in_poly(struct Polygon* ply, struct Point* pt)
     return inpoly;
 }
 
-struct PolygonVec *read_polygons(FILE* fptr, size_t npoly)
+
+/*
+long double polygon_calc_area(const struct CapVec* self, long double *tol)
 {
-    int status=1;
-    char buff[_MANGLE_SMALL_BUFFSIZE];
-    struct PolygonVec *self=NULL;
-    size_t i=0;
+    long double area=0;
+    // static work structure
+    static struct CapVec* dcaps=NULL;
+    size_t index=0;
+    long double cm_min=0;
+    long double darea=0;
 
-    self = PolygonVec_new(npoly);
-    if (!self) {
-        status=0;
-        wlog("could not allocate %lu polygons\n", npoly);
-        goto _read_polygons_bail;
-    }
+    CapVec_min_cm(self, &index, &cm_min);
 
-    // in order to get here, we had to read the token already
-    strcpy(buff, "polygon");
 
-    for (i=0; i<npoly; i++) {
-        // buff comes in with 'polygon'
-        if (0 != strcmp(buff,"polygon")) {
-            status=0;
-            wlog("Expected first token in polygon %lu to read "
-                 "'polygon', got '%s'\n", i, buff);
-            goto _read_polygons_bail;
-        }
-
-        status = read_polygon(fptr, &self->data[i]);
-        if (!status) {
-            wlog("failed to read polygon %lu\n", i);
-            break;
-        }
-
-        if (i != (npoly-1)) {
-            if (1 != fscanf(fptr,"%s",buff)) {
-                status=0;
-                wlog("Error reading token for polygon %lu\n", i);
-                goto _read_polygons_bail;
-            }
-        }
-    }
-
-_read_polygons_bail:
-
-    if (!status) {
-        free(self);
-        self=NULL;
-    }
-    return self;
+    return area;
 }
+*/
 
-
-int read_polygon(FILE* fptr, struct Polygon* ply)
+int read_into_polygon(FILE* fptr, struct Polygon* ply)
 {
     int status=1;
     struct Cap* cap=NULL;
@@ -125,10 +53,14 @@ int read_polygon(FILE* fptr, struct Polygon* ply)
         goto _read_single_polygon_errout;
     }
 
-    ply->cap_vec = CapVec_zeros(ncaps);
-    if (ply->cap_vec == NULL) {
-        status=0;
-        goto _read_single_polygon_errout;
+    if (ply->cap_vec) {
+        CapVec_resize(ply->cap_vec, ncaps);
+    } else {
+        ply->cap_vec = CapVec_zeros(ncaps);
+        if (ply->cap_vec == NULL) {
+            status=0;
+            goto _read_single_polygon_errout;
+        }
     }
 
     for (i=0; i<ncaps; i++) {
@@ -148,6 +80,21 @@ _read_single_polygon_errout:
  *
  * this is after reading the initial 'polygon' token
  */
+
+int scan_expected_value(FILE* fptr, char* buff, const char* expected_value)
+{
+    int status=1, res=0;
+
+    res = fscanf(fptr, "%s", buff);
+    if (1 != res || 0 != strcmp(buff,expected_value)) {
+        status=0;
+        wlog("Failed to read expected string in polygon: '%s' "
+             "got '%s'", expected_value, buff);
+    }
+    return status;
+}
+
+
 int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
 {
     int status=1;
@@ -245,20 +192,6 @@ _read_polygon_header_errout:
     return status;
 }
 
-int scan_expected_value(FILE* fptr, char* buff, const char* expected_value)
-{
-    int status=1, res=0;
-
-    res = fscanf(fptr, "%s", buff);
-    if (1 != res || 0 != strcmp(buff,expected_value)) {
-        status=0;
-        wlog("Failed to read expected string in polygon: '%s' "
-             "got '%s'", expected_value, buff);
-    }
-    return status;
-}
-
-
 void print_polygon(FILE* fptr, struct Polygon* self)
 {
     if (!self)
@@ -282,6 +215,99 @@ void print_polygon(FILE* fptr, struct Polygon* self)
     }
 
 }
+
+
+struct PolygonVec* PolygonVec_new(size_t n) 
+{
+    struct PolygonVec* self=NULL;
+
+    self=calloc(1, sizeof(struct PolygonVec));
+    if (self == NULL) {
+        return NULL;
+    }
+    // pointers will be NULL (0)
+    self->data = calloc(n, sizeof(struct Polygon));
+    if (self->data == NULL) {
+        free(self);
+        return NULL;
+    }
+
+    self->size = n;
+    return self;
+}
+
+struct PolygonVec* PolygonVec_free(struct PolygonVec* self)
+{
+    struct Polygon* ply=NULL;
+    size_t i=0;
+    if (self != NULL) {
+        if (self->data!= NULL) {
+
+            for (i=0; i<self->size; i++) {
+                ply=&self->data[i];
+                ply->cap_vec = CapVec_free(ply->cap_vec);
+            }
+            free(self->data);
+
+        }
+        free(self);
+        self=NULL;
+    }
+    return self;
+}
+
+struct PolygonVec *read_polygons(FILE* fptr, size_t npoly)
+{
+    int status=1;
+    char buff[_MANGLE_SMALL_BUFFSIZE];
+    struct PolygonVec *self=NULL;
+    size_t i=0;
+
+    self = PolygonVec_new(npoly);
+    if (!self) {
+        status=0;
+        wlog("could not allocate %lu polygons\n", npoly);
+        goto _read_polygons_bail;
+    }
+
+    // in order to get here, we had to read the token already
+    strcpy(buff, "polygon");
+
+    for (i=0; i<npoly; i++) {
+        // buff comes in with 'polygon'
+        if (0 != strcmp(buff,"polygon")) {
+            status=0;
+            wlog("Expected first token in polygon %lu to read "
+                 "'polygon', got '%s'\n", i, buff);
+            goto _read_polygons_bail;
+        }
+
+        status = read_into_polygon(fptr, &self->data[i]);
+        if (!status) {
+            wlog("failed to read polygon %lu\n", i);
+            break;
+        }
+
+        if (i != (npoly-1)) {
+            if (1 != fscanf(fptr,"%s",buff)) {
+                status=0;
+                wlog("Error reading token for polygon %lu\n", i);
+                goto _read_polygons_bail;
+            }
+        }
+    }
+
+_read_polygons_bail:
+
+    if (!status) {
+        free(self);
+        self=NULL;
+    }
+    return self;
+}
+
+
+
 void print_polygons(FILE* fptr, struct PolygonVec *self)
 {
     if (self) {

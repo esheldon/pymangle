@@ -25,7 +25,7 @@ struct PolygonVec {
 struct PolygonVec* PolygonVec_new(size_t n);
 struct PolygonVec* PolygonVec_free(struct PolygonVec* self);
 struct PolygonVec *read_polygons(FILE* fptr, size_t npoly);
-int read_polygon(FILE* fptr, struct Polygon* ply);
+int read_into_polygon(FILE* fptr, struct Polygon* ply);
 int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps);
 
 int is_in_poly(struct Polygon* ply, struct Point* pt);
