@@ -129,7 +129,10 @@ struct CapVec* CapVec_zeros(size_t n)
 struct CapVec* CapVec_free(struct CapVec* self)
 {
     if (self != NULL) {
-        free(self->data);
+        if (self->data) {
+            free(self->data);
+            self->data=NULL;
+        }
         free(self);
         self=NULL;
     }
@@ -179,9 +182,24 @@ int CapVec_reserve(struct CapVec* self, size_t new_capacity)
 int CapVec_resize(struct CapVec* self, size_t new_size)
 {
     int status=1;
-    if (new_size > self->capacity) {
-        status=CapVec_realloc(self, new_size);
+
+    // if new size is smaller, we will just leave junk in the 
+    // unused slots, which is OK since they are not "visible".
+    //
+    // If size is larger, only new capacity is zerod by reserve
+    // so we want to zero any elements up to current capacity
+
+    if (new_size > self->size) {
+        if (self->size < self->capacity) {
+            size_t n_to_zero=self->capacity-self->size;
+            memset(&self->data[self->size],
+                   0,
+                   n_to_zero*sizeof(struct Cap));
+        }
     }
+
+    // get at least new_size capacity
+    status=CapVec_reserve(self, new_size);
     if (status) {
         self->size=new_size;
     }

@@ -5,6 +5,146 @@
 #include "cap.h"
 #include "point.h"
 
+struct Polygon* polygon_new(void)
+{
+    struct Polygon* self=NULL;
+
+    self=calloc(1, sizeof(struct Polygon));
+    if (self==NULL) {
+        return NULL;
+    }
+
+    self->poly_id=-9999;
+    self->pixel_id=-9999;
+    self->weight=-9999;
+    self->area=-9999;
+
+    self->cap_vec = CapVec_new();
+    if (self->cap_vec==NULL) {
+        free(self);
+        return NULL;
+    }
+
+    return self;
+}
+
+struct Polygon* polygon_zeros(size_t n)
+{
+    struct Polygon* self=NULL;
+
+    self=calloc(1, sizeof(struct Polygon));
+    if (self==NULL) {
+        return NULL;
+    }
+
+    self->poly_id=-9999;
+    self->pixel_id=-9999;
+    self->weight=-9999;
+    self->area=-9999;
+
+    self->cap_vec = CapVec_zeros(n);
+    if (self->cap_vec==NULL) {
+        free(self);
+        return NULL;
+    }
+
+    return self;
+}
+
+
+struct Polygon* polygon_free(struct Polygon* self)
+{
+    if (self) {
+        if (self->cap_vec) {
+            self->cap_vec=CapVec_free(self->cap_vec);
+        }
+        free(self);
+        self=NULL;
+    }
+    return self;
+}
+
+struct Polygon* polygon_copy(const struct Polygon* self)
+{
+    struct Polygon* poly=NULL;
+
+    poly=calloc(1, sizeof(struct Polygon));
+    if (!poly) {
+        return NULL;
+    }
+    // copy  metadata
+    memcpy(poly, self, sizeof(struct Polygon));
+
+    // now copy full cap vector
+    poly->cap_vec = CapVec_copy(self->cap_vec);
+    if (!poly->cap_vec) {
+        free(poly);
+        poly=NULL;
+        return poly;
+    }
+
+    return poly;
+}
+
+int polygon_reserve(struct Polygon* self, size_t new_capacity)
+{
+    int status=0;
+
+    status=CapVec_reserve( self->cap_vec, new_capacity );
+
+    return status;
+}
+
+int polygon_resize(struct Polygon* self, size_t new_size)
+{
+    int status=0;
+
+    status=CapVec_resize( self->cap_vec, new_size );
+    // no need to alter area since zeros were added
+
+    return status;
+}
+
+int polygon_clear(struct Polygon* self)
+{
+    int status=0;
+
+    self->poly_id=-9999;
+    self->pixel_id=-9999;
+    self->weight=-9999;
+    self->area=-9999;
+    self->area_set=0;
+
+    status=CapVec_clear( self->cap_vec );
+
+    return status;
+}
+
+int polygon_push_cap(struct Polygon* self, const struct Cap* cap)
+{
+    int status=0;
+
+    status = CapVec_push(self->cap_vec, cap);
+    return status;
+}
+
+// expanding this code to avoid an extra copy
+struct Cap polygon_pop_cap(struct Polygon* self)
+{
+    size_t index=0;
+    
+    if (self->cap_vec->size > 0) {
+        index = self->cap_vec->size-1;
+        self->cap_vec->size--;
+    } else {
+        fprintf(stderr,
+                "CapVecError: attempt to pop from empty vector, returning garbage\n");
+    }
+
+    return self->cap_vec->data[index];
+}
+
+
 int is_in_poly(struct Polygon* ply, struct Point* pt)
 {
     size_t i=0;
@@ -160,6 +300,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
             goto _read_polygon_header_errout;
         }
         sscanf(valbuff, "%Lf", &ply->area);
+        ply->area_set=1;
     }
     if (got_pixel) {
         if (1 != fscanf(fptr,"%Lf",&ply->area)) {
@@ -168,25 +309,12 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                  ply->poly_id);
             goto _read_polygon_header_errout;
         }
+        ply->area_set=1;
         if (!scan_expected_value(fptr, kwbuff, "str):")) {
             status=0;
             goto _read_polygon_header_errout;
         }
     }
-
-    /*
-    if (ply->pixel_id > self->maxpix) {
-        self->maxpix = ply->pixel_id;
-    }
-    self->total_area += ply->area;
-
-    if (self->verbose > 1) {
-        fprintf(stderr,
-          "polygon %ld: poly_id %ld ncaps: %ld weight: %g pixel: %ld area: %g\n", 
-          self->current_poly_index, ply->poly_id, *ncaps, ply->weight, 
-          ply->pixel_id, ply->area);
-    }
-    */
 
 _read_polygon_header_errout:
     return status;
