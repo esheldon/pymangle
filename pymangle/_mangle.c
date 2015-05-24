@@ -218,7 +218,7 @@ PyMangleCapVec_init(struct PyMangleCapVec* self, PyObject *args, PyObject *kwds)
         return -1;
     }
 
-    self->cap_vec = CapVec_new( (size_t) n);
+    self->cap_vec = CapVec_zeros( (size_t) n);
     if (self->cap_vec == NULL) {
         PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
         return -1;

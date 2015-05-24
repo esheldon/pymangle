@@ -6,7 +6,106 @@
 #include "point.h"
 #include "defs.h"
 
-struct CapVec* CapVec_new(size_t n) 
+/*
+   Cap code
+*/
+
+void cap_set(struct Cap* self,
+             long double x,
+             long double y,
+             long double z,
+             long double cm)
+{
+    self->x=x;
+    self->y=y;
+    self->z=z;
+    self->cm=cm;
+}
+
+
+int read_cap(FILE* fptr, struct Cap* self) 
+{
+    int status=1, nres=0;
+
+    nres = fscanf(fptr,
+            "%Lf %Lf %Lf %Lf",&self->x,&self->y,&self->z,&self->cm);
+
+    if (nres != 4) {
+        status=0;
+        wlog("Failed to read cap\n");
+    }
+
+    return status;
+}
+
+void print_cap(FILE* fptr, struct Cap* self)
+{
+    if (!self)
+        return;
+
+    fprintf(fptr, "  %.18Lg %.18Lg %.18Lg %.18Lg\n", 
+            self->x, self->y, self->z, self->cm);
+}
+
+void snprint_cap(const struct Cap* self, char *buff, size_t n)
+{
+    if (!self)
+        return;
+
+    snprintf(buff,
+             n,
+             "%.18Lg %.18Lg %.18Lg %.18Lg",
+             self->x,
+             self->y,
+             self->z,
+             self->cm);
+}
+
+
+
+int is_in_cap(struct Cap* cap, struct Point* pt)
+{
+    int incap=0;
+    long double cdotm=0;
+
+    // cm = 1-cos(theta) where theta is the cap opening angle
+    cdotm = 1.0 - cap->x*pt->x - cap->y*pt->y - cap->z*pt->z;
+    if (cap->cm < 0.0) {
+        incap = cdotm > (-cap->cm);
+    } else {
+        incap = cdotm < cap->cm;
+    }
+
+    return incap;
+}
+
+/*
+
+   CapVec code
+
+*/
+
+struct CapVec* CapVec_new(void) 
+{
+    struct CapVec* self=NULL;
+
+    self=calloc(1, sizeof(struct CapVec));
+    if (self == NULL) {
+        return NULL;
+    }
+
+    self->capacity = CAPVEC_INITCAP;
+    self->size = 0;
+
+    self->data = calloc(self->capacity, sizeof(struct Cap));
+    if (self->data == NULL) {
+        free(self);
+        return NULL;
+    }
+    return self;
+}
+
+struct CapVec* CapVec_zeros(size_t n) 
 {
     struct CapVec* self=NULL;
 
@@ -26,27 +125,6 @@ struct CapVec* CapVec_new(size_t n)
 
     return self;
 }
-
-struct CapVec* CapVec_empty(void) 
-{
-    struct CapVec* self=NULL;
-
-    self=calloc(1, sizeof(struct CapVec));
-    if (self == NULL) {
-        return NULL;
-    }
-
-    self->capacity = CAPVEC_INITCAP;
-    self->data = calloc(self->capacity, sizeof(struct Cap));
-    if (self->data == NULL) {
-        free(self);
-        return NULL;
-    }
-    self->size = 0;
-    return self;
-}
-
-
 
 struct CapVec* CapVec_free(struct CapVec* self)
 {
@@ -166,7 +244,7 @@ struct CapVec* CapVec_copy(const struct CapVec* self)
         return NULL;
     }
 
-    cap_vec = CapVec_new(self->size);
+    cap_vec = CapVec_zeros(self->size);
     memcpy(cap_vec->data,
            self->data,
            self->size*sizeof(struct Cap));
@@ -200,74 +278,19 @@ void CapVec_min_cm(const struct CapVec* self,
 
 }
 
-void cap_set(struct Cap* self,
-             long double x,
-             long double y,
-             long double z,
-             long double cm)
+
+long double CapVec_area(const struct CapVec* self, long double *tol)
 {
-    self->x=x;
-    self->y=y;
-    self->z=z;
-    self->cm=cm;
+    long double area=0;
+
+    return area;
 }
 
+/*
 
-int read_cap(FILE* fptr, struct Cap* self) 
-{
-    int status=1, nres=0;
+   CapForRand code
 
-    nres = fscanf(fptr,
-            "%Lf %Lf %Lf %Lf",&self->x,&self->y,&self->z,&self->cm);
-
-    if (nres != 4) {
-        status=0;
-        wlog("Failed to read cap\n");
-    }
-
-    return status;
-}
-
-void print_cap(FILE* fptr, struct Cap* self)
-{
-    if (!self)
-        return;
-
-    fprintf(fptr, "  %.18Lg %.18Lg %.18Lg %.18Lg\n", 
-            self->x, self->y, self->z, self->cm);
-}
-
-void snprint_cap(const struct Cap* self, char *buff, size_t n)
-{
-    if (!self)
-        return;
-
-    snprintf(buff,
-             n,
-             "%.18Lg %.18Lg %.18Lg %.18Lg",
-             self->x,
-             self->y,
-             self->z,
-             self->cm);
-}
-
-
-
-int is_in_cap(struct Cap* cap, struct Point* pt)
-{
-    int incap=0;
-    long double cdotm=0;
-
-    // cm = 1-cos(theta) where theta is the cap opening angle
-    cdotm = 1.0 - cap->x*pt->x - cap->y*pt->y - cap->z*pt->z;
-    if (cap->cm < 0.0) {
-        incap = cdotm > (-cap->cm);
-    } else {
-        incap = cdotm < cap->cm;
-    }
-
-    return incap;
-}
+*/
 
 void CapForRand_from_thetaphi(struct CapForRand *rcap,
                               long double theta,

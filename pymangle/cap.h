@@ -41,12 +41,12 @@ struct CapForRand {
                        // can calculate from a Cap with acosl(1-cm)
 };
 
-// new capvec with specified number of elements.   All data
-// are zeroed
-struct CapVec* CapVec_new(size_t n);
-
 // new capvec with the default capacity (CAPVEC_INITCAP) but size 0
-struct CapVec* CapVec_empty(void);
+struct CapVec* CapVec_new(void);
+
+// new capvec with specified number of elements.   All data
+// are zerod
+struct CapVec* CapVec_zeros(size_t n);
 
 // make sure the backing data array has at least the requested
 // number of elements.  The ->size member is unchanged

@@ -125,7 +125,7 @@ int read_polygon(FILE* fptr, struct Polygon* ply)
         goto _read_single_polygon_errout;
     }
 
-    ply->cap_vec = CapVec_new(ncaps);
+    ply->cap_vec = CapVec_zeros(ncaps);
     if (ply->cap_vec == NULL) {
         status=0;
         goto _read_single_polygon_errout;
