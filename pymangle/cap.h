@@ -42,25 +42,25 @@ struct CapForRand {
 };
 
 // new capvec with the default capacity (CAPVEC_INITCAP) but size 0
-struct CapVec* CapVec_new(void);
+struct CapVec* capvec_new(void);
 
 // new capvec with specified number of elements.   All data
 // are zerod
-struct CapVec* CapVec_zeros(size_t n);
+struct CapVec* capvec_zeros(size_t n);
 
 // make sure the backing data array has at least the requested
 // number of elements.  The ->size member is unchanged
-int CapVec_reserve(struct CapVec* self, size_t new_capacity);
+int capvec_reserve(struct CapVec* self, size_t new_capacity);
 
 // resize the vector; if the new size is larger than the old
 // *capacity*, then a reallocation is performed, otherwise
 // the underlying data array is not changed, only the size
 // member is changed
-int CapVec_resize(struct CapVec* self, size_t new_size);
+int capvec_resize(struct CapVec* self, size_t new_size);
 
 // set the size to zero and the reallocate to the default capacity
 // (CAPVEC_INITCAP) this means the data should be considered lost
-int CapVec_clear(struct CapVec* self);
+int capvec_clear(struct CapVec* self);
 
 // push a new Cap onto the end of the vector, and increment the size
 // member
@@ -69,20 +69,20 @@ int CapVec_clear(struct CapVec* self);
 //
 // the capacity can be changed if the new size exceeds the capacity
 // resulting in a reallocation
-int CapVec_push(struct CapVec* self, const struct Cap* cap);
+int capvec_push(struct CapVec* self, const struct Cap* cap);
 
 // return a copy of the last Cap in the vector and decrement the size
 // member
 //
 // If the size is already 0, the return value is just the remaining
 // element at position 0, which might be garbage
-struct Cap CapVec_pop(struct CapVec* self);
+struct Cap capvec_pop(struct CapVec* self);
 
 // completely free all memory and return NULL
-struct CapVec* CapVec_free(struct CapVec* self);
+struct CapVec* capvec_free(struct CapVec* self);
 
 // get a full copy of the vector in new CapVec
-struct CapVec* CapVec_copy(const struct CapVec* self);
+struct CapVec* capvec_copy(const struct CapVec* self);
 
 /*
    Find the smallest cap in the cap vector
@@ -90,7 +90,7 @@ struct CapVec* CapVec_copy(const struct CapVec* self);
    Adapted from cmminf A J S Hamilton 2001
 */
 
-void CapVec_min_cm(const struct CapVec* self,
+void capvec_min_cm(const struct CapVec* self,
                    size_t *index,
                    long double* cm_min);
 

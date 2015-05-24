@@ -218,7 +218,7 @@ PyMangleCapVec_init(struct PyMangleCapVec* self, PyObject *args, PyObject *kwds)
         return -1;
     }
 
-    self->cap_vec = CapVec_zeros( (size_t) n);
+    self->cap_vec = capvec_zeros( (size_t) n);
     if (self->cap_vec == NULL) {
         PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
         return -1;
@@ -245,7 +245,7 @@ static void
 PyMangleCapVec_dealloc(struct PyMangleCapVec* self)
 {
 
-    self->cap_vec=CapVec_free(self->cap_vec);
+    self->cap_vec=capvec_free(self->cap_vec);
 
 #if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
     Py_TYPE(self)->tp_free((PyObject*)self);
@@ -474,7 +474,7 @@ PyManglePolygon_init(struct PyManglePolygon* self, PyObject *args, PyObject *kwd
     // we need garea to calculate this
     self->poly.area = -1.0;
 
-    self->poly.cap_vec = CapVec_copy(cap_vec_st->cap_vec);
+    self->poly.cap_vec = capvec_copy(cap_vec_st->cap_vec);
     if (self->poly.cap_vec == NULL) {
         PyErr_SetString(PyExc_MemoryError, "out of memory allocating CapVec");
         return -1;
@@ -487,7 +487,7 @@ static void
 PyManglePolygon_dealloc(struct PyManglePolygon* self)
 {
 
-    self->poly.cap_vec=CapVec_free(self->poly.cap_vec);
+    self->poly.cap_vec=capvec_free(self->poly.cap_vec);
 
 #if ((PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6) || (PY_MAJOR_VERSION == 3))
     Py_TYPE(self)->tp_free((PyObject*)self);

@@ -19,7 +19,7 @@ struct Polygon* polygon_new(void)
     self->weight=-9999;
     self->area=-9999;
 
-    self->cap_vec = CapVec_new();
+    self->cap_vec = capvec_new();
     if (self->cap_vec==NULL) {
         free(self);
         return NULL;
@@ -42,7 +42,7 @@ struct Polygon* polygon_zeros(size_t n)
     self->weight=-9999;
     self->area=-9999;
 
-    self->cap_vec = CapVec_zeros(n);
+    self->cap_vec = capvec_zeros(n);
     if (self->cap_vec==NULL) {
         free(self);
         return NULL;
@@ -56,7 +56,7 @@ struct Polygon* polygon_free(struct Polygon* self)
 {
     if (self) {
         if (self->cap_vec) {
-            self->cap_vec=CapVec_free(self->cap_vec);
+            self->cap_vec=capvec_free(self->cap_vec);
         }
         free(self);
         self=NULL;
@@ -76,7 +76,7 @@ struct Polygon* polygon_copy(const struct Polygon* self)
     memcpy(poly, self, sizeof(struct Polygon));
 
     // now copy full cap vector
-    poly->cap_vec = CapVec_copy(self->cap_vec);
+    poly->cap_vec = capvec_copy(self->cap_vec);
     if (!poly->cap_vec) {
         free(poly);
         poly=NULL;
@@ -90,7 +90,7 @@ int polygon_reserve(struct Polygon* self, size_t new_capacity)
 {
     int status=0;
 
-    status=CapVec_reserve( self->cap_vec, new_capacity );
+    status=capvec_reserve( self->cap_vec, new_capacity );
 
     return status;
 }
@@ -99,7 +99,7 @@ int polygon_resize(struct Polygon* self, size_t new_size)
 {
     int status=0;
 
-    status=CapVec_resize( self->cap_vec, new_size );
+    status=capvec_resize( self->cap_vec, new_size );
     // no need to alter area since zeros were added
 
     return status;
@@ -115,7 +115,7 @@ int polygon_clear(struct Polygon* self)
     self->area=-9999;
     self->area_set=0;
 
-    status=CapVec_clear( self->cap_vec );
+    status=capvec_clear( self->cap_vec );
 
     return status;
 }
@@ -124,7 +124,7 @@ int polygon_push_cap(struct Polygon* self, const struct Cap* cap)
 {
     int status=0;
 
-    status = CapVec_push(self->cap_vec, cap);
+    status = capvec_push(self->cap_vec, cap);
     return status;
 }
 
@@ -174,7 +174,7 @@ long double polygon_calc_area(const struct CapVec* self, long double *tol)
     long double cm_min=0;
     long double darea=0;
 
-    CapVec_min_cm(self, &index, &cm_min);
+    capvec_min_cm(self, &index, &cm_min);
 
 
     return area;
@@ -194,9 +194,9 @@ int read_into_polygon(FILE* fptr, struct Polygon* ply)
     }
 
     if (ply->cap_vec) {
-        CapVec_resize(ply->cap_vec, ncaps);
+        capvec_resize(ply->cap_vec, ncaps);
     } else {
-        ply->cap_vec = CapVec_zeros(ncaps);
+        ply->cap_vec = capvec_zeros(ncaps);
         if (ply->cap_vec == NULL) {
             status=0;
             goto _read_single_polygon_errout;
@@ -373,7 +373,7 @@ struct PolygonVec* PolygonVec_free(struct PolygonVec* self)
 
             for (i=0; i<self->size; i++) {
                 ply=&self->data[i];
-                ply->cap_vec = CapVec_free(ply->cap_vec);
+                ply->cap_vec = capvec_free(ply->cap_vec);
             }
             free(self->data);
 

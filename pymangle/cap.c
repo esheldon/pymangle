@@ -85,7 +85,7 @@ int is_in_cap(struct Cap* cap, struct Point* pt)
 
 */
 
-struct CapVec* CapVec_new(void) 
+struct CapVec* capvec_new(void) 
 {
     struct CapVec* self=NULL;
 
@@ -105,7 +105,7 @@ struct CapVec* CapVec_new(void)
     return self;
 }
 
-struct CapVec* CapVec_zeros(size_t n) 
+struct CapVec* capvec_zeros(size_t n) 
 {
     struct CapVec* self=NULL;
 
@@ -126,7 +126,7 @@ struct CapVec* CapVec_zeros(size_t n)
     return self;
 }
 
-struct CapVec* CapVec_free(struct CapVec* self)
+struct CapVec* capvec_free(struct CapVec* self)
 {
     if (self != NULL) {
         if (self->data) {
@@ -140,7 +140,7 @@ struct CapVec* CapVec_free(struct CapVec* self)
 }
 
 
-static int CapVec_realloc(struct CapVec* self, size_t new_capacity)
+static int capvec_realloc(struct CapVec* self, size_t new_capacity)
 {
     size_t old_capacity=self->capacity;
 
@@ -170,16 +170,16 @@ static int CapVec_realloc(struct CapVec* self, size_t new_capacity)
     return 1;
 }
 
-int CapVec_reserve(struct CapVec* self, size_t new_capacity)
+int capvec_reserve(struct CapVec* self, size_t new_capacity)
 {
     int status=1;
     if (new_capacity > self->capacity) {
-        status=CapVec_realloc(self, new_capacity);
+        status=capvec_realloc(self, new_capacity);
     }
     return status;
 }
 
-int CapVec_resize(struct CapVec* self, size_t new_size)
+int capvec_resize(struct CapVec* self, size_t new_size)
 {
     int status=1;
 
@@ -199,7 +199,7 @@ int CapVec_resize(struct CapVec* self, size_t new_size)
     }
 
     // get at least new_size capacity
-    status=CapVec_reserve(self, new_size);
+    status=capvec_reserve(self, new_size);
     if (status) {
         self->size=new_size;
     }
@@ -207,10 +207,10 @@ int CapVec_resize(struct CapVec* self, size_t new_size)
     return status;
 }
 
-int CapVec_clear(struct CapVec* self)
+int capvec_clear(struct CapVec* self)
 {
     int status=0;
-    status=CapVec_realloc(self, CAPVEC_INITCAP);
+    status=capvec_realloc(self, CAPVEC_INITCAP);
 
     if (status) {
         self->size=0;
@@ -219,7 +219,7 @@ int CapVec_clear(struct CapVec* self)
     return status;
 }
 
-int CapVec_push(struct CapVec* self, const struct Cap* cap)
+int capvec_push(struct CapVec* self, const struct Cap* cap)
 {
     int status=1;
     if (self->size == self->capacity) {
@@ -229,7 +229,7 @@ int CapVec_push(struct CapVec* self, const struct Cap* cap)
         } else {
             new_capacity = self->capacity*CAPVEC_PUSH_REALLOC_MULTVAL;
         }
-        status=CapVec_realloc(self, new_capacity);
+        status=capvec_realloc(self, new_capacity);
     }
 
     if (status) {
@@ -240,7 +240,7 @@ int CapVec_push(struct CapVec* self, const struct Cap* cap)
     return status;
 }
 
-struct Cap CapVec_pop(struct CapVec* self)
+struct Cap capvec_pop(struct CapVec* self)
 {
     size_t index=0;
     
@@ -255,14 +255,14 @@ struct Cap CapVec_pop(struct CapVec* self)
     return self->data[index];
 }
 
-struct CapVec* CapVec_copy(const struct CapVec* self)
+struct CapVec* capvec_copy(const struct CapVec* self)
 {
     struct CapVec * cap_vec=NULL;
     if (!self) {
         return NULL;
     }
 
-    cap_vec = CapVec_zeros(self->size);
+    cap_vec = capvec_zeros(self->size);
     memcpy(cap_vec->data,
            self->data,
            self->size*sizeof(struct Cap));
@@ -270,7 +270,7 @@ struct CapVec* CapVec_copy(const struct CapVec* self)
     return cap_vec;
 }
 
-void CapVec_min_cm(const struct CapVec* self,
+void capvec_min_cm(const struct CapVec* self,
                    size_t *index,
                    long double* cm_min)
 {
