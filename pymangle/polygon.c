@@ -145,6 +145,22 @@ struct Cap polygon_pop_cap(struct Polygon* self)
 }
 
 
+int polygon_has_zero_area(const struct Polygon* self) {
+    size_t i=0;
+    int has_zero_area=0;
+    struct Cap* cap=NULL;
+
+    for (i=0; i<self->caps->size; i++) {
+        cap=&self->caps->data[i];
+        if (cap->cm == 0.0L || cap->cm <= -2.0L) {
+            has_zero_area=1;
+            break;
+        }
+    }
+
+    return has_zero_area;
+}
+
 int is_in_poly(struct Polygon* ply, struct Point* pt)
 {
     size_t i=0;

@@ -53,6 +53,10 @@ int polygon_push_cap(struct Polygon* self, const struct Cap* cap);
 
 struct Cap polygon_pop_cap(struct Polygon* self);
 
+// loop through caps and see if any have zero area.
+// this does not use the ->area member
+// adapted from gzeroar, A J S Hamilton
+int polygon_has_zero_area(const struct Polygon* self);
 
 int read_into_polygon(FILE* fptr, struct Polygon* ply);
 int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps);
