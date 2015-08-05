@@ -12,7 +12,9 @@ ext=Extension("pymangle._mangle", ["pymangle/_mangle.c",
                                    "pymangle/pixel.c",
                                    "pymangle/point.c",
                                    "pymangle/stack.c",
-                                   "pymangle/rand.c"])
+                                   "pymangle/rand.c"],
+              include_dirs=[numpy.get_include()])
+              
 
 exec(open('pymangle/version.py').read())
 
