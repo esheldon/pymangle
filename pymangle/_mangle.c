@@ -560,6 +560,7 @@ PyManglePolygon_get_cap(struct PyManglePolygon* self, PyObject *args, PyObject *
 static PyMethodDef PyManglePolygon_methods[] = { 
     {"size", (PyCFunction)PyManglePolygon_size, METH_VARARGS, "get length of Polygon\n"},
     {"_get_cap", (PyCFunction)PyManglePolygon_get_cap, METH_VARARGS, "get a copy of the cap at the specified index\n"},
+    {NULL}
 };
 
 // the type definition for PyManglePolygon
