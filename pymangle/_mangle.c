@@ -910,6 +910,27 @@ PyMangleMask_dealloc(struct PyMangleMask* self)
 }
 
 
+static PyObject*
+make_bool_array(npy_intp size, const char* name, npy_bool** ptr)
+{
+    PyObject* array=NULL;
+    npy_intp dims[1];
+    int ndims=1;
+    if (size <= 0) {
+        PyErr_Format(PyExc_ValueError, "size of %s array must be > 0",name);
+        return NULL;
+    }
+
+    dims[0] = size;
+    array = PyArray_ZEROS(ndims, dims, NPY_BOOL, 0);
+    if (array==NULL) {
+        PyErr_Format(PyExc_MemoryError, "could not create %s array",name);
+        return NULL;
+    }
+
+    *ptr = PyArray_DATA((PyArrayObject*)array);
+    return array;
+}
 
 
 static PyObject*
@@ -1185,7 +1206,7 @@ PyMangleMask_contains(struct PyMangleMask* self, PyObject* args)
     PyObject* ra_obj=NULL;
     PyObject* dec_obj=NULL;
     PyObject* contained_obj=NULL;
-    npy_intp* cont_ptr=NULL;
+    npy_bool* cont_ptr=NULL;
     long double* ra_ptr=NULL;
     long double* dec_ptr=NULL;
     long double weight=0;
@@ -1199,7 +1220,7 @@ PyMangleMask_contains(struct PyMangleMask* self, PyObject* args)
     if (!check_ra_dec_arrays(ra_obj,dec_obj,&ra_ptr,&nra,&dec_ptr,&ndec)) {
         return NULL;
     }
-    if (!(contained_obj=make_intp_array(nra, "contained", &cont_ptr))) {
+    if (!(contained_obj=make_bool_array(nra, "contained", &cont_ptr))) {
         return NULL;
     }
 
