@@ -19,11 +19,12 @@ exec(open('pymangle/version.py').read())
 
 description="Simple python code to read and work with Mangle masks."
 
-rstname='README.rst'
+dname=os.path.dirname(__file__)
+rstname=os.path.join(dname,'README.rst')
 if os.path.exists(rstname):
     desc_file=rstname
 else:
-    desc_file='README.md'
+    desc_file=os.path.join(dname,'README.md')
 
 with open(desc_file) as fobj:
     long_description=fobj.read()
