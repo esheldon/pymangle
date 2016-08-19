@@ -67,5 +67,9 @@ build and install python library
 --------------------------------
 
 ```
+# using pip
+pip install pymangle
+
+# from source
 python setup.py install --prefix=/some/path
 ```
