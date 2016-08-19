@@ -3,7 +3,6 @@ from distutils.core import setup, Extension, Command
 import os
 import numpy
 
-data_files=[]
 
 ext=Extension("pymangle._mangle", ["pymangle/_mangle.c",
                                    "pymangle/mangle.c",
@@ -18,10 +17,25 @@ ext=Extension("pymangle._mangle", ["pymangle/_mangle.c",
 
 exec(open('pymangle/version.py').read())
 
+description="Simple python code to read and work with Mangle masks."
+
+rstname='README.rst'
+if os.path.exists(rstname):
+    desc_file=rstname
+else:
+    desc_file='README.md'
+
+with open(desc_file) as fobj:
+    long_description=fobj.read()
+
+
+
 setup(name="pymangle", 
       packages=['pymangle'],
+      description=description,
+      long_description=long_description,
       version=__version__,
-      data_files=data_files,
+      license = "GPL",
       ext_modules=[ext],
       include_dirs=numpy.get_include())
 
