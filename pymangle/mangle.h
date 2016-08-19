@@ -95,7 +95,7 @@ int mangle_polyid_and_weight(struct MangleMask *self,
  */
 #define MANGLE_POLYID_AND_WEIGHT(self, pt, poly_id, weight) ({            \
     int ret=0;                                                            \
-    if ( (self)->pixeltype == 'u') {              \
+    if ( (self)->pixeltype == 'u') {                                      \
         ret=mangle_polyid_and_weight_nopix(self,pt,poly_id,weight);       \
     } else {                                                              \
         ret=mangle_polyid_and_weight_pix(self,pt,poly_id,weight);         \
