@@ -93,6 +93,11 @@ int pixel_parse_scheme(char buff[_MANGLE_SMALL_BUFFSIZE],
         goto _get_pix_scheme_errout;
     }
 
+    // negative resolution is equivalent to 'u' or unpixelized
+    if (*res < 0) {
+        *pixeltype='u';
+    }
+
 _get_pix_scheme_errout:
     return status;
 }
