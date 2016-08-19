@@ -66,7 +66,7 @@ m.weights = weight_array
 build and install python library
 --------------------------------
 
-```
+```bash
 # using pip
 pip install pymangle
 
