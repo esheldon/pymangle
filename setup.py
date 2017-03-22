@@ -1,6 +1,9 @@
-from distutils.core import setup, Extension, Command
+import glob
 import os
-import numpy
+
+from setuptools import setup
+from setuptools.extension import Extension
+from setuptools.command import build_ext
 
 
 ext = Extension("pymangle._mangle", ["pymangle/_mangle.c",
@@ -10,8 +13,18 @@ ext = Extension("pymangle._mangle", ["pymangle/_mangle.c",
                                      "pymangle/pixel.c",
                                      "pymangle/point.c",
                                      "pymangle/stack.c",
-                                     "pymangle/rand.c"],
-                include_dirs=[numpy.get_include()])
+                                     "pymangle/rand.c"])
+
+
+class BuildExt(build_ext.build_ext):
+    '''Custom build_ext command to hide the numpy import
+    Inspired by http://stackoverflow.com/a/21621689/1860757'''
+    def finalize_options(self):
+        '''add numpy includes to the include dirs'''
+        build_ext.build_ext.finalize_options(self)
+        import numpy as np
+        self.include_dirs.append(np.get_include())
+        self.include_dirs.extend(glob.glob("pymangle/*h"))
 
 
 exec(open('pymangle/version.py').read())
@@ -35,6 +48,10 @@ setup(name="pymangle",
       long_description=long_description,
       version=__version__,
       license="GPL",
+      install_requires=['numpy', ],
       ext_modules=[ext],
-      include_dirs=numpy.get_include()
+      setup_requires=['numpy', ],
+      cmdclass={'build_ext': BuildExt},
+      include_package_data=True,
+      # include_dirs=numpy.get_include()
       )
