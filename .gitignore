@@ -1,2 +1,5 @@
 .tox
 MANIFEST
+.cache
+pymangle.egg-info
+pymangle/*pyc
