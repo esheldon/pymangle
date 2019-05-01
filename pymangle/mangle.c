@@ -78,7 +78,7 @@ void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity)
             "\tnpix:       %ld\n"
             "\tsnapped:    %d\n"
             "\tbalkanized: %d\n"
-	    "\tweightfile: %s\n"
+            "\tweightfile: %s\n"
             "\tverbose:    %d\n", 
             self->filename, self->total_area*R2D*R2D, 
             npoly, self->pixeltype, self->pixelres, npix, 
@@ -158,29 +158,37 @@ int mangle_read_header(struct MangleMask* self)
         wlog("Error reading header keyword");
         goto _read_header_bail;
     }
+
     while (0 != strcmp(self->buff,"polygon")) {
         if (0 == strcmp(self->buff,"snapped")) {
+
             if (self->verbose) 
                 wlog("\tpolygons are snapped\n");
             self->snapped=1;
+
         } else if (0 == strcmp(self->buff,"balkanized")) {
+
             if (self->verbose) 
                 wlog("\tpolygons are balkanized\n");
             self->balkanized=1;
-	} else if (0 == strcmp(self->buff,"real")) {
-	    if (1 != fscanf(self->fptr,"%d", &self->real)) {
-		status=0;
-		wlog("Error reading real value");
-		goto _read_header_bail;
-	    }
-	    if (self->verbose)
-		wlog("\treal: %d\n",self->real);
-	    if ((self->real != 8) && (self->real != 10)) {
-		status=0;
-		wlog("Illegal real value (must be 8 or 10)");
-		goto _read_header_bail;
-	    }	    
+
+        } else if (0 == strcmp(self->buff,"real")) {
+
+            if (1 != fscanf(self->fptr,"%d", &self->real)) {
+                status=0;
+                wlog("Error reading real value");
+                goto _read_header_bail;
+            }
+            if (self->verbose)
+                wlog("\treal: %d\n",self->real);
+            if ((self->real != 8) && (self->real != 10)) {
+                status=0;
+                wlog("Illegal real value (must be 8 or 10)");
+                goto _read_header_bail;
+            }
+
         } else if (0 == strcmp(self->buff,"pixelization")) {
+
             // read the pixelization description, e.g. 9s
             if (1 != fscanf(self->fptr,"%s", self->buff)) {
                 status=0;
@@ -198,6 +206,7 @@ int mangle_read_header(struct MangleMask* self)
                 wlog("\t\tscheme: '%c'\n", self->pixeltype);
                 wlog("\t\tres:     %ld\n", self->pixelres);
             }
+
         } else {
             status=0;
             wlog("Got unexpected header keyword: '%s'", self->buff);
