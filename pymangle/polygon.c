@@ -283,7 +283,6 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
         goto _read_polygon_header_errout;
     }
 
-    //fprintf(stderr,"header line:%s", linebuf);
 
     // find first non-space character
     i=0;
@@ -300,7 +299,6 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
         wlog("Failed to read polygon id\n");
         goto _read_polygon_header_errout;
     }
-    //fprintf(stderr,"polygon id: %ld\n", ply->poly_id);
 
     // it is safe to run these in a row without checking
     i = get_next_blank(linebuf, n, i);
@@ -312,21 +310,24 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
     }
 
     if (linebuf[i] != '(') {
-        //fprintf(stderr,"simple header\n");
-        // simple header like this polygon 1 4, just read ncaps now
+        // simple header like this
+        //    polygon 1 4
+        // just read ncaps now
+
         if (1 != sscanf(&linebuf[i],"%ld",ncaps)) {
             status=0;
             wlog("Failed to read ncaps for polygon id %ld\n", ply->poly_id);
             goto _read_polygon_header_errout;
         }
-        //fprintf(stderr,"    ncaps: %ld\n", *ncaps);
 
     } else {
-        //fprintf(stderr,"complex header\n");
+
         // complex header like this
-        // polygon 1 ( 4 caps, 0.666667 weight, 0 pixel, 0.000115712115129 str):
+        //   polygon 1 ( 4 caps, 0.666667 weight, 0 pixel, 0.000115712115129 str):
         // we do not care about the order, but we do demand the keywords are there
-        // as well as values to what is what
+        // as well as values so we can tell what is what
+        //
+        // the only required entry is the caps
 
         // skip past the '(' character
         i+=1;
@@ -348,7 +349,6 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                 wlog("Failed to read header value for polygon %ld\n", ply->poly_id);
                 goto _read_polygon_header_errout;
             }
-            //fprintf(stderr,"    valbuff: %s\n", valbuff);
 
             i = get_next_blank(linebuf, n, i);
             i = get_next_nonblank(linebuf, n, i);
@@ -369,7 +369,6 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                 wlog("failed to read keyword in header for polygon %ld\n", ply->poly_id);
                 goto _read_polygon_header_errout;
             }
-            //fprintf(stderr,"    kwbuff: %s\n", kwbuff);
 
             if (0==strcmp(kwbuff,"caps,")
                     || 0==strcmp(kwbuff,"caps")
@@ -380,7 +379,6 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                     wlog("Failed to read ncaps for polygon id %ld", ply->poly_id);
                     goto _read_polygon_header_errout;
                 }
-                //fprintf(stderr,"    ncaps: %ld\n", *ncaps);
                 read_ncaps=1;
 
             } else if (0 == strcmp(kwbuff,"weight,")
@@ -392,7 +390,6 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                     wlog("Failed to read pixel for polygon id %ld", ply->poly_id);
                     goto _read_polygon_header_errout;
                 }
-                //fprintf(stderr,"    weight: %Lf\n", ply->weight);
 
             } else if (0 == strcmp(kwbuff,"pixel,")
                           || 0 == strcmp(kwbuff,"pixel")
@@ -403,7 +400,6 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                     wlog("Failed to read pixel for polygon id %ld", ply->poly_id);
                     goto _read_polygon_header_errout;
                 }
-                //fprintf(stderr,"    pixel: %ld\n", ply->pixel_id);
 
             } else if (0 == strcmp(kwbuff,"str):")
                          || 0 == strcmp(kwbuff,"str,")
@@ -415,11 +411,9 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                     goto _read_polygon_header_errout;
                 }
                 ply->area_set=1;
-                //fprintf(stderr,"    area: %Lf\n", ply->area);
             }
 
             i = get_next_blank(linebuf, n, i);
-            //fprintf(stderr,"rest of line: %s", &linebuf[i]);
             if (i==n || linebuf[i] == '\n') {
                 break;
             }
