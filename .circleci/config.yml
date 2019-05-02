@@ -23,10 +23,6 @@ jobs:
             pip install -U pip setuptools numpy
             python setup.py install
 
-      - save_cache:
-          paths:
-            - ./venv
-
       - run:
           name: run tests
           command: |
