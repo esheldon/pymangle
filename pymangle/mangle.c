@@ -130,6 +130,36 @@ _mangle_read_bail:
     return status;
 }
 
+static size_t count_polygons(FILE* fptr)
+{
+    size_t i=0;
+    char *linebuf=NULL;
+    size_t len=0, npoly=0;
+    ssize_t nread=0;
+
+    char keyword[9] = "polygon ";
+    size_t klen = strlen(keyword);
+    size_t tocomp=0;
+
+    rewind(fptr);
+    while ( (nread=getline(&linebuf, &len, fptr)) != -1 ) {
+        if (len < klen) {
+            tocomp=len;
+        } else {
+            tocomp=klen;
+        }
+
+        if (0==strncmp(keyword,linebuf,tocomp)) {
+            npoly += 1;
+        }
+    }
+
+    free(linebuf);
+    rewind(fptr);
+
+    return npoly;
+}
+
 // npoly
 // snapped
 // balkanized
@@ -140,14 +170,16 @@ int mangle_read_header(struct MangleMask* self, FILE* fptr)
     int status=1;
 
     if (2 != fscanf(fptr,"%ld %s", &self->npoly, self->buff)) {
-        status = 0;
-        wlog("Could not read number of polygons");
-        goto _read_header_bail;
-    }
-    if (0 != strcmp(self->buff,"polygons")) {
-        status = 0;
-        wlog("Expected keyword 'polygons' but got '%s'", self->buff);
-        goto _read_header_bail;
+        self->npoly=count_polygons(fptr);
+        //status = 0;
+        //wlog("Could not read number of polygons");
+        //goto _read_header_bail;
+    } else {
+        if (0 != strcmp(self->buff,"polygons")) {
+            status = 0;
+            wlog("Expected keyword 'polygons' but got '%s'", self->buff);
+            goto _read_header_bail;
+        }
     }
 
     if (self->verbose)
