@@ -124,6 +124,9 @@ int mangle_read(struct MangleMask* self, const char* filename)
     }
 
 _mangle_read_bail:
+    if (fptr != NULL) {
+        fclose(fptr); fptr=NULL;
+    }
     return status;
 }
 
