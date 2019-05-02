@@ -73,3 +73,9 @@ pip install pymangle
 # from source
 python setup.py install --prefix=/some/path
 ```
+
+tests
+-----
+```bash
+python -c 'import pymangle; pymangle.test.test()
+```
