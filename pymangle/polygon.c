@@ -179,23 +179,179 @@ int is_in_poly(struct Polygon* ply, struct Point* pt)
     return inpoly;
 }
 
+static void ikrand(int *ik, double *ikran)
+{
+    unsigned long *likran;
+    unsigned long long *llikran;
 
-/*
+    /* seed random number generator with *ik */
+    srandom((unsigned int) *ik);
+
+    /* generate pseudo-random unsigned long */
+    if (sizeof(long long) > sizeof(double)) {
+        likran = (unsigned long *)ikran;
+        *likran = random();
+        /* generate pseudo-random unsigned long long */
+    } else {
+        llikran = (unsigned long long *)ikran;
+        *llikran = (unsigned int)random();
+        *llikran <<= (8 * sizeof(unsigned int));
+        *llikran |= (unsigned int)random();
+    }
+}
+
+/*------------------------------------------------------------------------------
+  Called as fortran subroutine
+      ikrandp(ikchk,ikran)
+
+  ikchk = ikchk + ikran
+  passed as double's, but treated as unsigned long's or unsigned long long's.
+*/
+static void ikrandp(double *ikchk, double *ikran)
+{
+    unsigned long *likchk;
+    unsigned long long *llikchk;
+
+    if (sizeof(long long) > sizeof(double)) {
+	likchk = (unsigned long *)ikchk;
+	*likchk += *(unsigned long *)ikran;
+    } else {
+	llikchk = (unsigned long long *)ikchk;
+	*llikchk += *(unsigned long long *)ikran;
+    }
+}
+
+/*------------------------------------------------------------------------------
+  Called as fortran subroutine
+      ikrandm(ikchk,ikran)
+
+  ikchk = ikchk - ikran
+  passed as double's, but treated as unsigned long's or unsigned long long's.
+*/
+static void ikrandm(double *ikchk, double *ikran)
+{
+    unsigned long *likchk;
+    unsigned long long *llikchk;
+
+    if (sizeof(long long) > sizeof(double)) {
+	likchk = (unsigned long *)ikchk;
+	*likchk -= *(unsigned long *)ikran;
+    } else {
+	llikchk = (unsigned long long *)ikchk;
+	*llikchk -= *(unsigned long long *)ikran;
+    }
+}
+//
+// construct cartesian axes with z-axis along rp(i)
+//
+
+static void gaxisi(const struct Cap *cap,
+                   struct Point *xi,
+                   struct Point *yi)
+{
+    long double sx=0.0L;
+
+    sx = cap->x*cap->x + cap->z*cap->z;
+    if (sx > 0.5L) {
+
+        sx=sqrtl(sx);
+
+        // xi in direction y x rp (= x direction if rp is along z)
+        xi->x =  cap->z/sx;
+        xi->y =  0.0L;
+        xi->z = -cap->x/sx;
+    } else {
+
+        sx=sqrtl(cap->x*cap->x + cap->y*cap->y);
+
+        // xi in direction rp x z
+        xi->x =  cap->y/sx; 
+        xi->y = -cap->x/sx;
+        xi->z =  0.0L;
+    }
+
+    // yi in direction rp x xi (= y direction if rp is along z)
+    yi->x = xi->z*cap->y - xi->y*cap->z;
+    yi->y = xi->x*cap->z - xi->z*cap->x;
+    yi->z = xi->y*cap->x - xi->x*cap->y;
+
+    return;
+
+}
+static int polygon_is_zero_area(const struct CapVec* self)
+{
+    int is_zero_area=0;
+    size_t i=0;
+
+    for (i=0; i<self->size; i++) {
+        long double cm=self->data[i].cm;
+        if ( (cm == 0.0L) || (cm <= -2.0L) ) {
+            is_zero_area=1;
+            break;
+        }
+    }
+    return is_zero_area;
+}
+
 long double polygon_calc_area(const struct CapVec* self, long double *tol)
 {
-    long double area=0;
+    long double
+        area=0, cmi=0, cm_min=0, darea=0, si=0,
+        ikchk=0,ikran=0,
+        *phi=NULL;
+
     // static work structure
     static struct CapVec* dcaps=NULL;
-    size_t index=0;
-    long double cm_min=0;
-    long double darea=0;
+    size_t i=0, index=0;
+    int whole=0, nbd=0, nbd0m=0, nbd0p=0, nmult=0,
+        scmi=0,
+        *iord=NULL;
+    struct Point xp={0}, yp={0};
 
-    capvec_min_cm(self, &index, &cm_min);
+    if (polygon_is_zero_area(self)) {
+        goto _polygon_calc_area_bail;
+    }
+    //capvec_min_cm(self, &index, &cm_min);
+    iord = (int *) calloc(self->size*2, sizeof(int));
+    phi = (long double *) calloc(self->size*2, sizeof(long double));
 
+    whole=1;
+    nbd=0;
+    //garea_(area, poly->rp, poly->cm, &poly->np, tol, &verb, phi, iord, &ldegen);
+
+    for (i=0; i<self->size; i++) {
+        struct Cap *cap=&self->data[i];
+
+        // cm >= 2 means include whole sphere, which is no constraint
+        if (cap->cm >= 2.0L) {
+            continue;
+        }
+
+        // there is a constraint, so area is not whole sphere
+        whole = 0;
+
+        // scmi * cmi = 1-cos th(i)
+        if (cap->cm >= 0.0L) {
+          scmi = 1;
+        } else {
+          scmi =-1;
+        }
+
+        cmi = fabsl(cap->cm);
+
+        // si = sin th(i)
+        si = sqrtl(cmi*(2.0L-cmi));
+
+        gaxisi(cap, &xi, &yi);
+
+    }
+
+_polygon_calc_area_bail:
+    free(iord); iord=NULL;
+    free(phi); phi=NULL;
 
     return area;
 }
-*/
 
 int read_into_polygon(FILE* fptr, struct Polygon* ply)
 {
