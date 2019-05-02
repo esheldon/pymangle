@@ -41,10 +41,6 @@ void mangle_clear(struct MangleMask* self)
         self->poly_vec = polyvec_free(self->poly_vec);
         self->pixel_list_vec = PixelListVec_free(self->pixel_list_vec);
 
-        if (self->fptr != NULL) {
-            fclose(self->fptr);
-        }
-
         self->pixelres=-1;
         self->maxpix=-1;
         self->pixeltype='u';
@@ -94,25 +90,27 @@ void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity)
 int mangle_read(struct MangleMask* self, const char* filename)
 {
     int status=1;
+    FILE *fptr=NULL;
 
     mangle_clear(self);
-    self->filename=strdup(filename);
-    self->fptr = fopen(filename,"r");
     self->real = 10;  // default
-    if (self->fptr == NULL) {
+    self->filename=strdup(filename);
+
+    fptr = fopen(filename,"r");
+    if (fptr == NULL) {
         wlog("Failed to open file for reading: %s\n",filename);
         status=0;
         goto _mangle_read_bail;
     }
 
-    if (!mangle_read_header(self)) {
+    if (!mangle_read_header(self, fptr)) {
         status=0;
         goto _mangle_read_bail;
     }
 
     if (self->verbose)
         wlog("reading %ld polygons\n", self->npoly);
-    self->poly_vec = read_polygons(self->fptr, self->npoly);
+    self->poly_vec = read_polygons(fptr, self->npoly);
     if (!self->poly_vec) {
         status=0;
         goto _mangle_read_bail;
@@ -134,11 +132,11 @@ _mangle_read_bail:
 // balkanized
 // pixelres
 // pixeltype
-int mangle_read_header(struct MangleMask* self)
+int mangle_read_header(struct MangleMask* self, FILE* fptr)
 {
     int status=1;
 
-    if (2 != fscanf(self->fptr,"%ld %s", &self->npoly, self->buff)) {
+    if (2 != fscanf(fptr,"%ld %s", &self->npoly, self->buff)) {
         status = 0;
         wlog("Could not read number of polygons");
         goto _read_header_bail;
@@ -153,7 +151,7 @@ int mangle_read_header(struct MangleMask* self)
         wlog("Expect %ld polygons\n", self->npoly);
 
     // get some metadata
-    if (1 != fscanf(self->fptr,"%s", self->buff) ) {
+    if (1 != fscanf(fptr,"%s", self->buff) ) {
         status=0;
         wlog("Error reading header keyword");
         goto _read_header_bail;
@@ -174,7 +172,7 @@ int mangle_read_header(struct MangleMask* self)
 
         } else if (0 == strcmp(self->buff,"real")) {
 
-            if (1 != fscanf(self->fptr,"%d", &self->real)) {
+            if (1 != fscanf(fptr,"%d", &self->real)) {
                 status=0;
                 wlog("Error reading real value");
                 goto _read_header_bail;
@@ -190,7 +188,7 @@ int mangle_read_header(struct MangleMask* self)
         } else if (0 == strcmp(self->buff,"pixelization")) {
 
             // read the pixelization description, e.g. 9s
-            if (1 != fscanf(self->fptr,"%s", self->buff)) {
+            if (1 != fscanf(fptr,"%s", self->buff)) {
                 status=0;
                 wlog("Error reading pixelization scheme");
                 goto _read_header_bail;
@@ -212,7 +210,7 @@ int mangle_read_header(struct MangleMask* self)
             wlog("Got unexpected header keyword: '%s'", self->buff);
             goto _read_header_bail;
         }
-        if (1 != fscanf(self->fptr,"%s", self->buff) ) {
+        if (1 != fscanf(fptr,"%s", self->buff) ) {
             status=0;
             wlog("Error reading header keyword");
             goto _read_header_bail;
