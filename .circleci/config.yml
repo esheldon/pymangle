@@ -31,5 +31,5 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-			python -c 'import pymangle; pymangle.test.test()'
+            python -c 'import pymangle; pymangle.test.test()'
 
