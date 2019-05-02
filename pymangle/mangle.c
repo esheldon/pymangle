@@ -42,7 +42,7 @@ void mangle_clear(struct MangleMask* self)
         self->pixel_list_vec = PixelListVec_free(self->pixel_list_vec);
 
         if (self->fptr != NULL) {
-            fclose(self->fptr);
+            fclose(self->fptr); self->fptr=NULL;
         }
 
         self->pixelres=-1;
@@ -126,6 +126,9 @@ int mangle_read(struct MangleMask* self, const char* filename)
     }
 
 _mangle_read_bail:
+    if (self->fptr != NULL) {
+        fclose(self->fptr); self->fptr=NULL;
+    }
     return status;
 }
 

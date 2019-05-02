@@ -282,6 +282,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
         wlog("Failed to read header line\n");
         goto _read_polygon_header_errout;
     }
+    //fprintf(stderr,"line: %s", linebuf);
 
 
     // find first non-space character
@@ -299,6 +300,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
         wlog("Failed to read polygon id\n");
         goto _read_polygon_header_errout;
     }
+    //fprintf(stderr,"polygon id: %ld\n", ply->poly_id);
 
     // it is safe to run these in a row without checking
     i = get_next_blank(linebuf, n, i);
@@ -334,12 +336,13 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
 
         while (1) {
             i = get_next_nonblank(linebuf, n, i);
-            if (linebuf[i] == '\n') {
+            if (linebuf[i] == '\n' || linebuf[i]=='\0') {
                 break;
             }
             if (linebuf[i] == ')') {
                 break;
             }
+            //fprintf(stderr,"rest of line: '%s'", &linebuf[i]);
 
             // read the value string
             if (1 != sscanf(&linebuf[i],"%s",valbuff)) {
@@ -414,7 +417,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
             }
 
             i = get_next_blank(linebuf, n, i);
-            if (i==n || linebuf[i] == '\n') {
+            if (i==n || linebuf[i] == '\n' | linebuf[i]=='\0') {
                 break;
             }
 
