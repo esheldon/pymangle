@@ -314,13 +314,14 @@ int mangle_read_weights(struct MangleMask* self, const char* weightfile)
     // free memory
     free(weight_new);
 
-    // close file
-    fclose(wfptr);
 
     // and because it all worked we can set the filename
     snprintf(self->weightfile,_MANGLE_MAX_FILELEN,"%s",weightfile);
 
 _mangle_readweight_bail:
+    if (wfptr != NULL) {
+        fclose(wfptr);
+    }
     return status;
 }
 
