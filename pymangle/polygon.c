@@ -132,7 +132,7 @@ int polygon_push_cap(struct Polygon* self, const struct Cap* cap)
 struct Cap polygon_pop_cap(struct Polygon* self)
 {
     size_t index=0;
-    
+
     if (self->caps->size > 0) {
         index = self->caps->size-1;
         self->caps->size--;
@@ -231,7 +231,7 @@ _read_single_polygon_errout:
     return status;
 }
 
-/* 
+/*
  * parse the polygon "header" for the index poly_index
  *
  * this is after reading the initial 'polygon' token
@@ -287,7 +287,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
 
     // find first non-space character
     i=0;
-    i = get_next_nonblank(linebuf, n, i);
+    i = get_next_nonblank(linebuf, nread, i);
     if (linebuf[i] == '\n') {
         status=0;
         wlog("Failed to read header line\n");
@@ -303,8 +303,8 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
     //fprintf(stderr,"polygon id: %ld\n", ply->poly_id);
 
     // it is safe to run these in a row without checking
-    i = get_next_blank(linebuf, n, i);
-    i = get_next_nonblank(linebuf, n, i);
+    i = get_next_blank(linebuf, nread, i);
+    i = get_next_nonblank(linebuf, nread, i);
     if (linebuf[i] == '\n') {
         status=0;
         wlog("Failed to find ncaps for polygon id %ld\n", ply->poly_id);
@@ -335,7 +335,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
         i+=1;
 
         while (1) {
-            i = get_next_nonblank(linebuf, n, i);
+            i = get_next_nonblank(linebuf, nread, i);
             if (linebuf[i] == '\n' || linebuf[i]=='\0') {
                 break;
             }
@@ -353,8 +353,8 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                 goto _read_polygon_header_errout;
             }
 
-            i = get_next_blank(linebuf, n, i);
-            i = get_next_nonblank(linebuf, n, i);
+            i = get_next_blank(linebuf, nread, i);
+            i = get_next_nonblank(linebuf, nread, i);
             if (linebuf[i] == '\n') {
                 // we didn't find a keyword, the file is misformatted
                 status=0;
@@ -416,7 +416,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
                 ply->area_set=1;
             }
 
-            i = get_next_blank(linebuf, n, i);
+            i = get_next_blank(linebuf, nread, i);
             if (i==n || linebuf[i] == '\n' | linebuf[i]=='\0') {
                 break;
             }
@@ -470,7 +470,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
 
     if (1 != fscanf(fptr,"%ld",ncaps)) {
         status=0;
-        wlog("Failed to read ncaps for polygon id %ld", 
+        wlog("Failed to read ncaps for polygon id %ld",
              ply->poly_id);
         goto _read_polygon_header_errout;
     }
@@ -483,7 +483,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
 
     if (1 != fscanf(fptr,"%Lf",&ply->weight)) {
         status=0;
-        wlog("Failed to read weight for polygon id %ld", 
+        wlog("Failed to read weight for polygon id %ld",
              ply->poly_id);
         goto _read_polygon_header_errout;
     }
@@ -497,7 +497,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
     if (2 != fscanf(fptr,"%s %s",valbuff, kwbuff)) {
         status=0;
         wlog("Failed to read value and keyword (pixel,str) "
-             "for polygon id %ld\n", 
+             "for polygon id %ld\n",
              ply->poly_id);
         goto _read_polygon_header_errout;
     }
@@ -510,7 +510,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
         // we probably read the area
         if (0 != strcmp(kwbuff,"str):")) {
             status=0;
-            wlog("Expected str): keyword at polygon id %ld, got %s", 
+            wlog("Expected str): keyword at polygon id %ld, got %s",
                  ply->poly_id, kwbuff);
             goto _read_polygon_header_errout;
         }
@@ -520,7 +520,7 @@ int read_polygon_header(FILE* fptr, struct Polygon* ply, size_t* ncaps)
     if (got_pixel) {
         if (1 != fscanf(fptr,"%Lf",&ply->area)) {
             status=0;
-            wlog("Failed to read area for polygon id %ld", 
+            wlog("Failed to read area for polygon id %ld",
                  ply->poly_id);
             goto _read_polygon_header_errout;
         }
@@ -548,7 +548,7 @@ void print_polygon(FILE* fptr, struct Polygon* self)
 
     fprintf(fptr,
             "polygon %ld ( %ld caps, %.18Lg weight, %ld pixel, %.18Lg str):\n",
-            self->poly_id, ncaps, self->weight, 
+            self->poly_id, ncaps, self->weight,
             self->pixel_id, self->area);
     if (ncaps > 0) {
         size_t i=0;
@@ -561,7 +561,7 @@ void print_polygon(FILE* fptr, struct Polygon* self)
 }
 
 
-struct PolyVec* polyvec_new(size_t n) 
+struct PolyVec* polyvec_new(size_t n)
 {
     struct PolyVec* self=NULL;
 
