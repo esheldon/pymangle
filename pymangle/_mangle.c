@@ -1563,36 +1563,9 @@ PyMangleMask_genrand_range(struct PyMangleMask* self, PyObject* args)
     }
 
     point_set_from_radec(&pt, ramin, decmin);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
     point_set_from_radec(&pt, ramin, decmax);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
     point_set_from_radec(&pt, ramax, decmin);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
     point_set_from_radec(&pt, ramax, decmax);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
-    if (num_contained==0) {
-        PyErr_Format(PyExc_ValueError,
-                "no corners are contained within mask");
-        status=0;
-        goto _genrand_range_cleanup;
-    }
-
 
     if (!(ra_obj=make_longdouble_array(nrand, "ra", &ra_ptr))) {
         status=0;
