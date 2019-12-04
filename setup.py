@@ -32,7 +32,6 @@ with open(desc_file) as fobj:
 
 
 setup(name="pymangle", 
-      version='v0.9.2',
       packages=['pymangle'],
       description=description,
       long_description=long_description,
