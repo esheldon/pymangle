@@ -114,7 +114,17 @@ polygon                      2 ( 4 caps,            1.0000000 weight,   0.002261
             fobj.write(text)
 
         m = Mangle(fname)
-        ra,dec = m.genrand(3)
+
+        n = 100
+        ra, dec = m.genrand(n)
+        assert np.all(m.contains(ra, dec))
+
+        ra, dec = m.genrand_range(n, 180, 190, -3.5, -3.2)
+        assert np.all(m.contains(ra, dec))
+
+        ra, dec = m.genrand_range(n, 100, 250, -4, 0)
+        assert np.all(m.contains(ra, dec))
+
         if os.path.exists(fname):
             os.remove(fname)
 
