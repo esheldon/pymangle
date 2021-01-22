@@ -13,14 +13,14 @@ functions:
 # note we do *not* over-ride the genrand* functions,
 # as they perform conversions as needed
 #
-# we also grab the doc strings from the C code as needed, 
+# we also grab the doc strings from the C code as needed,
 # only writing new ones in the over-ridden methods
 
 from __future__ import print_function
 
-import numpy
 from numpy import array
 from . import _mangle
+
 
 def genrand_cap(nrand, ra, dec, angle_degrees, quadrant=-1):
     """
@@ -35,7 +35,7 @@ def genrand_cap(nrand, ra, dec, angle_degrees, quadrant=-1):
     dec: scalar
         dec center of cap in degrees
     angle_degrees: scalar
-        opening angle of cap in degrees 
+        opening angle of cap in degrees
     quadrant: scalar
         Quadrant in which to generate the points.  Set to
         1,2,3,4 to specify a quadrant, anything else to
@@ -48,14 +48,17 @@ def genrand_cap(nrand, ra, dec, angle_degrees, quadrant=-1):
     """
     return _mangle.genrand_cap(nrand, ra, dec, angle_degrees, quadrant)
 
+
 class Mangle(_mangle.Mangle):
-    __doc__=_mangle.Mangle.__doc__
+    __doc__ = _mangle.Mangle.__doc__
+
     def __init__(self, filename, verbose=False):
         if verbose:
-            verb=1
+            verb = 1
         else:
-            verb=0
-        super(Mangle,self).__init__(filename,verb)
+            verb = 0
+
+        super(Mangle, self).__init__(filename, verb)
 
     def read_weights(self, weightfile):
         """
@@ -70,8 +73,8 @@ class Mangle(_mangle.Mangle):
         ------
         none
         """
-        
-        super(Mangle,self).read_weights(weightfile)
+
+        super(Mangle, self).read_weights(weightfile)
 
     def polyid_and_weight(self, ra, dec):
         """
@@ -90,7 +93,7 @@ class Mangle(_mangle.Mangle):
         """
         ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
         dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
-        return super(Mangle,self).polyid_and_weight(ra,dec)
+        return super(Mangle, self).polyid_and_weight(ra, dec)
 
     def polyid(self, ra, dec):
         """
@@ -109,7 +112,7 @@ class Mangle(_mangle.Mangle):
         """
         ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
         dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
-        return super(Mangle,self).polyid(ra,dec)
+        return super(Mangle, self).polyid(ra, dec)
 
     def weight(self, ra, dec):
         """
@@ -128,7 +131,7 @@ class Mangle(_mangle.Mangle):
         """
         ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
         dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
-        return super(Mangle,self).weight(ra,dec)
+        return super(Mangle, self).weight(ra, dec)
 
     def contains(self, ra, dec):
         """
@@ -148,7 +151,7 @@ class Mangle(_mangle.Mangle):
         # we specify order to force contiguous
         ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
         dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
-        return super(Mangle,self).contains(ra,dec)
+        return super(Mangle, self).contains(ra, dec)
 
     def check_quadrants(self,
                         ra,
@@ -193,10 +196,13 @@ class Mangle(_mangle.Mangle):
         # we specify order to force contiguous
         ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
         dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
-        angle_degrees = array(angle_degrees, ndmin=1, dtype='f16', copy=False, order='C')
-        return super(Mangle,self).check_quadrants(ra,dec,angle_degrees,
-                                                  density,max_masked_fraction)
-
+        angle_degrees = array(
+            angle_degrees, ndmin=1, dtype='f16', copy=False, order='C'
+        )
+        return super(Mangle, self).check_quadrants(
+            ra, dec, angle_degrees,
+            density, max_masked_fraction,
+        )
 
     def calc_simplepix(self, ra, dec):
         """
@@ -215,32 +221,55 @@ class Mangle(_mangle.Mangle):
         """
         ra = array(ra, ndmin=1, dtype='f16', copy=False)
         dec = array(dec, ndmin=1, dtype='f16', copy=False)
-        return super(Mangle,self).calc_simplepix(ra,dec)
+        return super(Mangle, self).calc_simplepix(ra, dec)
 
-    def _set_weights(self,weights):
+    def _set_weights(self, weights):
         # check length of array...
         npoly = _mangle.Mangle.get_npoly(self)
-        if (weights.size != npoly) :
-            raise IndexError("Must set weights for full list of %d polygons." % (npoly))
+        if (weights.size != npoly):
+            raise IndexError(
+                "Must set weights for full list of %d polygons." % (npoly)
+            )
 
         # make long doubles
         weights = array(weights, ndmin=1, dtype='f16', copy=False)
 
-        super(Mangle,self).set_weights(weights)
+        super(Mangle, self).set_weights(weights)
 
+    filename = property(_mangle.Mangle.get_filename, doc="The mask filename")
+    weightfile = property(
+        _mangle.Mangle.get_weightfile, doc="The weight filename (optional)"
+    )
+    area = property(_mangle.Mangle.get_area, doc="The area of the mask")
+    npoly = property(
+        _mangle.Mangle.get_npoly, doc="The number of polygons in the mask"
+    )
+    is_pixelized = property(
+        _mangle.Mangle.get_is_pixelized, doc="True if pixelized."
+    )
+    pixeltype = property(
+        _mangle.Mangle.get_pixeltype,
+        doc="The pixelization type, 'u' of unpixelized"
+    )
+    pixelres = property(
+        _mangle.Mangle.get_pixelres,
+        doc="The pixel resolution, -1 if unpixelized",
+    )
+    maxpix = property(
+        _mangle.Mangle.get_pixelres, doc="The maximum pixel value"
+    )
+    is_snapped = property(
+        _mangle.Mangle.get_is_snapped, doc="True if snapped.",
+    )
+    is_balkanized = property(
+        _mangle.Mangle.get_is_balkanized, doc="True if balkanized."
+    )
+    areas = property(_mangle.Mangle.get_areas, doc="Area of pixels in mask.")
+    weights = property(
+        _mangle.Mangle.get_weights,
+        _set_weights, doc="Weights of pixels in mask."
+    )
 
-    filename = property(_mangle.Mangle.get_filename,doc="The mask filename")
-    weightfile = property(_mangle.Mangle.get_weightfile,doc="The weight filename (optional)")
-    area = property(_mangle.Mangle.get_area,doc="The area of the mask")
-    npoly = property(_mangle.Mangle.get_npoly,doc="The number of polygons in the mask")
-    is_pixelized = property(_mangle.Mangle.get_is_pixelized,doc="True if pixelized.")
-    pixeltype = property(_mangle.Mangle.get_pixeltype,doc="The pixelization type, 'u' of unpixelized")
-    pixelres = property(_mangle.Mangle.get_pixelres,doc="The pixel resolution, -1 if unpixelized")
-    maxpix = property(_mangle.Mangle.get_pixelres,doc="The maximum pixel value")
-    is_snapped = property(_mangle.Mangle.get_is_snapped,doc="True if snapped.")
-    is_balkanized = property(_mangle.Mangle.get_is_balkanized,doc="True if balkanized.")
-    areas = property(_mangle.Mangle.get_areas,doc="Area of pixels in mask.")
-    weights = property(_mangle.Mangle.get_weights,_set_weights,doc="Weights of pixels in mask.")
 
 class Cap(_mangle.Cap):
     """
@@ -272,9 +301,12 @@ class Cap(_mangle.Cap):
         """
         data = array(data, ndmin=1, dtype='f16', copy=False)
         if data.size != 4:
-            raise ValueError("capdata must be an array of length 4, got %d" % data.size)
+            raise ValueError(
+                "capdata must be an array of length 4, got %d" % data.size
+            )
 
-        super(Cap,self).set(data)
+        super(Cap, self).set(data)
+
 
 class CapVec(_mangle.CapVec):
     """
@@ -296,21 +328,23 @@ class CapVec(_mangle.CapVec):
 
         parameters
         ----------
+        index: int
+            Index into vector
         data: sequence or Cap
-            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
-            or a Cap
+            Data to set the cap in the vector.  Can be a sequence/array of
+            [x,y,z,cm] or a Cap
         """
 
-        sz=self.size()
+        sz = self.size()
         if index > (sz-1):
-            raise IndexError("index %s out of bounds: [0,%s)" % (index,sz))
+            raise IndexError("index %s out of bounds: [0,%s)" % (index, sz))
 
         if isinstance(data, Cap):
-            cap=data
+            cap = data
         else:
-            cap=Cap(data)
+            cap = Cap(data)
 
-        self._set_cap(index, data)
+        self._set_cap(index, cap)
 
     def get(self, index):
         """
@@ -318,14 +352,13 @@ class CapVec(_mangle.CapVec):
 
         parameters
         ----------
-        data: sequence or Cap
-            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
-            or a Cap
+        index: int
+            Index into vector
         """
 
-        sz=self.size()
+        sz = self.size()
         if index > (sz-1):
-            raise IndexError("index %s out of bounds: [0,%s)" % (index,sz))
+            raise IndexError("index %s out of bounds: [0,%s)" % (index, sz))
 
         return self._get_cap(index)
 
@@ -335,14 +368,22 @@ class CapVec(_mangle.CapVec):
 
         parameters
         ----------
+        index: int
+            Index into vector
         data: sequence or Cap
-            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
+            Data to set the cap in the vector.  Can be a sequence/array of
+            [x,y,z,cm]
         """
         self.set(index, data)
 
     def __getitem__(self, index):
         """
         get a copy of the Cap specified by the index
+
+        parameters
+        ----------
+        index: int
+            Index into vector
         """
         return self.get(index)
 
@@ -351,6 +392,7 @@ class CapVec(_mangle.CapVec):
         length of CapVec
         """
         return self.size()
+
 
 class Polygon(_mangle.Polygon):
     """
@@ -374,10 +416,12 @@ class Polygon(_mangle.Polygon):
 
         wtarr = array(weight, ndmin=1, dtype='f16', copy=False)
 
-        super(Polygon,self).__init__(poly_id,
-                                     pixel_id,
-                                     wtarr,
-                                     cap_vec)
+        super(Polygon, self).__init__(
+            poly_id,
+            pixel_id,
+            wtarr,
+            cap_vec,
+        )
 
     def get(self, index):
         """
@@ -385,9 +429,8 @@ class Polygon(_mangle.Polygon):
 
         parameters
         ----------
-        data: sequence or Cap
-            Data to set the cap in the vector.  Can be a sequence/array of [x,y,z,cm]
-            or a Cap
+        index: int
+            Index into polygon
         """
 
         return self.get(index)
@@ -395,10 +438,15 @@ class Polygon(_mangle.Polygon):
     def __getitem__(self, index):
         """
         get a copy of the Cap specified by the index
+
+        parameters
+        ----------
+        index: int
+            Index into polygon
         """
-        sz=self.size()
+        sz = self.size()
         if index > (sz-1):
-            raise IndexError("index %s out of bounds: [0,%s)" % (index,sz))
+            raise IndexError("index %s out of bounds: [0,%s)" % (index, sz))
 
         return self._get_cap(index)
 
@@ -407,5 +455,3 @@ class Polygon(_mangle.Polygon):
         length of CapVec
         """
         return self.size()
-
-
