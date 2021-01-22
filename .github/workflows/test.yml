@@ -29,10 +29,14 @@ jobs:
         shell: bash -l {0}
         run: |
           conda config --set always_yes yes
-          conda install --quiet setuptools numpy
+          conda install --quiet setuptools numpy flake8
 
           python -m pip install -e .
 
+      - name: lint
+        shell: bash -l {0}
+        run: |
+            flake8 pymangle
       - name: test
         shell: bash -l {0}
         run: |

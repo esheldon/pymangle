@@ -1,18 +1,19 @@
 from __future__ import with_statement, print_function
-import sys, os
+import sys
+import os
 import tempfile
-import warnings
 import numpy as np
 
 from .mangle import Mangle
 
 import unittest
 
+
 def test():
     suite = unittest.TestLoader().loadTestsFromTestCase(TestRead)
-    res=unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful()
+    res = unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful()
 
-    if not res :
+    if not res:
         sys.exit(1)
 
 
@@ -23,7 +24,7 @@ class TestRead(unittest.TestCase):
         a basic mask with standard header, no pixelization
         """
 
-        text="""3 polygons
+        text = """3 polygons
 snapped
 polygon 0 ( 4 caps, 1 weight, 0 pixel, 0.101732020850849 str):
   0.0871557427476579 -0.9961946980917455  0.0000000000000001 -0.2568551745226059
@@ -39,14 +40,16 @@ polygon 2 ( 4 caps, 1 weight, 0 pixel, 0.302363552547417 str):
   0.0871557427476579 -0.9961946980917455  0.0000000000000001 -0.2568551745226059
   0.0871557427476579 -0.9961946980917455  0.0000000000000001 1.642787609686539
   0.1084526035253447  0.0094883733383393 -0.9940563382223196 1
- -0.1084526035253447 -0.0094883733383393 -0.9940563382223196 -1\n"""
+ -0.1084526035253447 -0.0094883733383393 -0.9940563382223196 -1\n"""  # noqa
 
-        fname=tempfile.mktemp(prefix='mangle-StandardUnpixelized-',suffix='.ply')
-        with open(fname,'w') as fobj:
+        fname = tempfile.mktemp(
+            prefix='mangle-StandardUnpixelized-', suffix='.ply',
+        )
+        with open(fname, 'w') as fobj:
             fobj.write(text)
 
         m = Mangle(fname)
-        ra,dec = m.genrand(3)
+        ra, dec = m.genrand(3)
         if os.path.exists(fname):
             os.remove(fname)
 
@@ -54,7 +57,6 @@ polygon 2 ( 4 caps, 1 weight, 0 pixel, 0.302363552547417 str):
         """
         standard header with pixel
         """
-
 
         text="""3 polygons
 pixelization 9s
@@ -75,24 +77,22 @@ polygon 2 ( 5 caps, 1 weight, 87381 pixel, 0.000000311118396 str):
   0.2587637821532441 -0.9659406319340194 -0.0000249931148859 -0.9872370563678581
  -0.9987456407765712  0.0000501504038277  0.0500713742045613 -1
  -0.0122715382857199  0.9999247018391445  0.0000000000000000 -1
-  0.0000000000000000  0.0000000000000000  1.0000000000000000 0.00390625\n"""
+  0.0000000000000000  0.0000000000000000  1.0000000000000000 0.00390625\n"""  # noqa
 
-
-        fname=tempfile.mktemp(prefix='mangle-Pixelized-',suffix='.ply')
-        with open(fname,'w') as fobj:
+        fname = tempfile.mktemp(prefix='mangle-Pixelized-', suffix='.ply')
+        with open(fname, 'w') as fobj:
             fobj.write(text)
 
-        m = Mangle(fname)
+        _ = Mangle(fname)
         if os.path.exists(fname):
             os.remove(fname)
-
 
     def testNopixel(self):
         """
         standard header with no pixels in the header
         """
 
-        text="""3 polygons
+        text = """3 polygons
 polygon                      0 ( 4 caps,            1.0000000 weight,   0.0074088006084970 str):
  -0.06081623141086969775  -0.00532073080682029988   0.99813479842186692004  -1.00000000000000000000
   0.08715574274765790219  -0.99619469809174554520   0.00000000000000010000  -0.21198924639327809682
@@ -107,10 +107,12 @@ polygon                      2 ( 4 caps,            1.0000000 weight,   0.002261
   0.08715574274765790219  -0.99619469809174554520   0.00000000000000010000   1.50753836296070398149
  -0.05387300028307989708  -0.00471327679489840033   0.99853667176641747183   1.00000000000000000000
  -0.05213680212878300108  -0.00456137913876279982   0.99862953475457394426  -1.00000000000000000000
-  0.08715574274765790219  -0.99619469809174554520   0.00000000000000010000  -0.21198924639327809682\n"""
+  0.08715574274765790219  -0.99619469809174554520   0.00000000000000010000  -0.21198924639327809682\n"""  # noqa
 
-        fname=tempfile.mktemp(prefix='mangle-Nopixel-',suffix='.ply')
-        with open(fname,'w') as fobj:
+        fname = tempfile.mktemp(
+            prefix='mangle-Nopixel-', suffix='.ply',
+        )
+        with open(fname, 'w') as fobj:
             fobj.write(text)
 
         m = Mangle(fname)
@@ -127,7 +129,6 @@ polygon                      2 ( 4 caps,            1.0000000 weight,   0.002261
 
         if os.path.exists(fname):
             os.remove(fname)
-
 
     def testWeightOnly(self):
         """
@@ -154,24 +155,25 @@ polygon 4 ( 4 caps, 1 weight ):
 0.0000000000 0.0000000000 1.0000000000 0.3244097924
 0.0000000000 0.0000000000 1.0000000000 -0.3053416295
 0.3420201433 -0.9396926208 0.0000000000 1.0000000000
-0.9396926208 -0.3420201433 0.0000000000 -1.0000000000\n"""
+0.9396926208 -0.3420201433 0.0000000000 -1.0000000000\n"""  # noqa
 
-        fname=tempfile.mktemp(prefix='mangle-Weight-',suffix='.ply')
-        with open(fname,'w') as fobj:
+        fname = tempfile.mktemp(
+            prefix='mangle-Weight-', suffix='.ply',
+        )
+        with open(fname, 'w') as fobj:
             fobj.write(text)
 
         m = Mangle(fname)
-        ra,dec = m.genrand(3)
+        ra, dec = m.genrand(3)
         if os.path.exists(fname):
             os.remove(fname)
-
 
     def testMinimalNonStandard(self):
         """
         absolutely minimal header, non standard
         """
 
-        text="""4 polygons
+        text = """4 polygons
 polygon 1 4
 0.0000000000 0.0000000000 1.0000000000 1.0174524064
 0.0000000000 0.0000000000 1.0000000000 -0.8781306566
@@ -191,17 +193,18 @@ polygon 4 4
 0.0000000000 0.0000000000 1.0000000000 0.3244097924
 0.0000000000 0.0000000000 1.0000000000 -0.3053416295
 0.3420201433 -0.9396926208 0.0000000000 1.0000000000
-0.9396926208 -0.3420201433 0.0000000000 -1.0000000000\n"""
+0.9396926208 -0.3420201433 0.0000000000 -1.0000000000\n"""  # noqa
 
-        fname=tempfile.mktemp(prefix='mangle-MinimalNonStandard-',suffix='.ply')
-        with open(fname,'w') as fobj:
+        fname = tempfile.mktemp(
+            prefix='mangle-MinimalNonStandard-', suffix='.ply',
+        )
+        with open(fname, 'w') as fobj:
             fobj.write(text)
 
         m = Mangle(fname)
-        ra,dec = m.genrand(3)
+        ra, dec = m.genrand(3)
         if os.path.exists(fname):
             os.remove(fname)
-
 
     def testMinimalNonStandardNopolycount(self):
         """
@@ -228,24 +231,25 @@ polygon 4 4
 0.0000000000 0.0000000000 1.0000000000 0.3244097924
 0.0000000000 0.0000000000 1.0000000000 -0.3053416295
 0.3420201433 -0.9396926208 0.0000000000 1.0000000000
-0.9396926208 -0.3420201433 0.0000000000 -1.0000000000\n"""
+0.9396926208 -0.3420201433 0.0000000000 -1.0000000000\n"""  # noqa
 
-        fname=tempfile.mktemp(prefix='mangle-MinimalNonStandard-',suffix='.ply')
-        with open(fname,'w') as fobj:
+        fname = tempfile.mktemp(
+            prefix='mangle-MinimalNonStandard-', suffix='.ply',
+        )
+        with open(fname, 'w') as fobj:
             fobj.write(text)
 
         m = Mangle(fname)
-        ra,dec = m.genrand(3)
+        ra, dec = m.genrand(3)
         if os.path.exists(fname):
             os.remove(fname)
-
 
     def testExtraLines(self):
         """
         extra line at the end
         """
 
-        text="""polygon 1 4
+        text = """polygon 1 4
 0.0000000000 0.0000000000 1.0000000000 1.0174524064
 0.0000000000 0.0000000000 1.0000000000 -0.8781306566
 0.5000000000 0.8660254038 0.0000000000 1.0000000000
@@ -267,15 +271,16 @@ polygon 4 4
 0.9396926208 -0.3420201433 0.0000000000 -1.0000000000\n
         \n"""
 
-        fname=tempfile.mktemp(prefix='mangle-MinimalNonStandard-',suffix='.ply')
-        with open(fname,'w') as fobj:
+        fname = tempfile.mktemp(
+            prefix='mangle-MinimalNonStandard-', suffix='.ply',
+        )
+        with open(fname, 'w') as fobj:
             fobj.write(text)
 
         m = Mangle(fname)
-        ra,dec = m.genrand(3)
+        ra, dec = m.genrand(3)
         if os.path.exists(fname):
             os.remove(fname)
-
 
 
 if __name__ == '__main__':

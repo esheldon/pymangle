@@ -1,7 +1,7 @@
 pymangle
 ========
 
-Simple python code to read and work with Mangle masks.
+A python code to read and work with Mangle masks.
 
 The underlying code is in C for speed, and is based on some C++ code written by
 Martin White.  Martin has posted his C++ code at
