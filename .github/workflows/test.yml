@@ -13,7 +13,7 @@ jobs:
       matrix:
         pyver: [3.6, 3.7, 3.8]
 
-    runs-on: "ubuntu-latest"
+    runs-on: 'ubuntu-latest'
 
     steps:
       - uses: actions/checkout@v2
@@ -29,16 +29,15 @@ jobs:
         shell: bash -l {0}
         run: |
           conda config --set always_yes yes
-          conda install --quiet setuptools numpy flake8
+          conda install --quiet setuptools flake8
 
           python -m pip install -e .
 
       - name: lint
         shell: bash -l {0}
         run: |
-            flake8 pymangle
+          flake8 pymangle
       - name: test
         shell: bash -l {0}
         run: |
           python -c 'import pymangle; pymangle.test.test()'
-
