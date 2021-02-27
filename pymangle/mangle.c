@@ -41,10 +41,6 @@ void mangle_clear(struct MangleMask* self)
         self->poly_vec = polyvec_free(self->poly_vec);
         self->pixel_list_vec = PixelListVec_free(self->pixel_list_vec);
 
-        if (self->fptr != NULL) {
-            fclose(self->fptr);
-        }
-
         self->pixelres=-1;
         self->maxpix=-1;
         self->pixeltype='u';
@@ -78,7 +74,7 @@ void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity)
             "\tnpix:       %ld\n"
             "\tsnapped:    %d\n"
             "\tbalkanized: %d\n"
-	    "\tweightfile: %s\n"
+            "\tweightfile: %s\n"
             "\tverbose:    %d\n", 
             self->filename, self->total_area*R2D*R2D, 
             npoly, self->pixeltype, self->pixelres, npix, 
@@ -94,25 +90,27 @@ void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity)
 int mangle_read(struct MangleMask* self, const char* filename)
 {
     int status=1;
+    FILE *fptr=NULL;
 
     mangle_clear(self);
-    self->filename=strdup(filename);
-    self->fptr = fopen(filename,"r");
     self->real = 10;  // default
-    if (self->fptr == NULL) {
+    self->filename=strdup(filename);
+
+    fptr = fopen(filename,"r");
+    if (fptr == NULL) {
         wlog("Failed to open file for reading: %s\n",filename);
         status=0;
         goto _mangle_read_bail;
     }
 
-    if (!mangle_read_header(self)) {
+    if (!mangle_read_header(self, fptr)) {
         status=0;
         goto _mangle_read_bail;
     }
 
     if (self->verbose)
         wlog("reading %ld polygons\n", self->npoly);
-    self->poly_vec = read_polygons(self->fptr, self->npoly);
+    self->poly_vec = read_polygons(fptr, self->npoly);
     if (!self->poly_vec) {
         status=0;
         goto _mangle_read_bail;
@@ -126,7 +124,40 @@ int mangle_read(struct MangleMask* self, const char* filename)
     }
 
 _mangle_read_bail:
+    if (fptr != NULL) {
+        fclose(fptr); fptr=NULL;
+    }
     return status;
+}
+
+static size_t count_polygons(FILE* fptr)
+{
+    size_t i=0;
+    char *linebuf=NULL;
+    size_t len=0, npoly=0;
+    ssize_t nread=0;
+
+    char keyword[9] = "polygon ";
+    size_t klen = strlen(keyword);
+    size_t tocomp=0;
+
+    rewind(fptr);
+    while ( (nread=getline(&linebuf, &len, fptr)) != -1 ) {
+        if (len < klen) {
+            tocomp=len;
+        } else {
+            tocomp=klen;
+        }
+
+        if (0==strncmp(keyword,linebuf,tocomp)) {
+            npoly += 1;
+        }
+    }
+
+    free(linebuf);
+    rewind(fptr);
+
+    return npoly;
 }
 
 // npoly
@@ -134,55 +165,65 @@ _mangle_read_bail:
 // balkanized
 // pixelres
 // pixeltype
-int mangle_read_header(struct MangleMask* self)
+int mangle_read_header(struct MangleMask* self, FILE* fptr)
 {
     int status=1;
 
-    if (2 != fscanf(self->fptr,"%ld %s", &self->npoly, self->buff)) {
-        status = 0;
-        wlog("Could not read number of polygons");
-        goto _read_header_bail;
-    }
-    if (0 != strcmp(self->buff,"polygons")) {
-        status = 0;
-        wlog("Expected keyword 'polygons' but got '%s'", self->buff);
-        goto _read_header_bail;
+    if (2 != fscanf(fptr,"%ld %s", &self->npoly, self->buff)) {
+        self->npoly=count_polygons(fptr);
+        //status = 0;
+        //wlog("Could not read number of polygons");
+        //goto _read_header_bail;
+    } else {
+        if (0 != strcmp(self->buff,"polygons")) {
+            status = 0;
+            wlog("Expected keyword 'polygons' but got '%s'", self->buff);
+            goto _read_header_bail;
+        }
     }
 
     if (self->verbose)
         wlog("Expect %ld polygons\n", self->npoly);
 
     // get some metadata
-    if (1 != fscanf(self->fptr,"%s", self->buff) ) {
+    if (1 != fscanf(fptr,"%s", self->buff) ) {
         status=0;
         wlog("Error reading header keyword");
         goto _read_header_bail;
     }
+
     while (0 != strcmp(self->buff,"polygon")) {
         if (0 == strcmp(self->buff,"snapped")) {
+
             if (self->verbose) 
                 wlog("\tpolygons are snapped\n");
             self->snapped=1;
+
         } else if (0 == strcmp(self->buff,"balkanized")) {
+
             if (self->verbose) 
                 wlog("\tpolygons are balkanized\n");
             self->balkanized=1;
-	} else if (0 == strcmp(self->buff,"real")) {
-	    if (1 != fscanf(self->fptr,"%d", &self->real)) {
-		status=0;
-		wlog("Error reading real value");
-		goto _read_header_bail;
-	    }
-	    if (self->verbose)
-		wlog("\treal: %d\n",self->real);
-	    if ((self->real != 8) && (self->real != 10)) {
-		status=0;
-		wlog("Illegal real value (must be 8 or 10)");
-		goto _read_header_bail;
-	    }	    
+
+        } else if (0 == strcmp(self->buff,"real")) {
+
+            if (1 != fscanf(fptr,"%d", &self->real)) {
+                status=0;
+                wlog("Error reading real value");
+                goto _read_header_bail;
+            }
+            if (self->verbose)
+                wlog("\treal: %d\n",self->real);
+            if ((self->real != 8) && (self->real != 10)) {
+                status=0;
+                wlog("Illegal real value (must be 8 or 10)");
+                goto _read_header_bail;
+            }
+
         } else if (0 == strcmp(self->buff,"pixelization")) {
+
             // read the pixelization description, e.g. 9s
-            if (1 != fscanf(self->fptr,"%s", self->buff)) {
+            if (1 != fscanf(fptr,"%s", self->buff)) {
                 status=0;
                 wlog("Error reading pixelization scheme");
                 goto _read_header_bail;
@@ -198,12 +239,13 @@ int mangle_read_header(struct MangleMask* self)
                 wlog("\t\tscheme: '%c'\n", self->pixeltype);
                 wlog("\t\tres:     %ld\n", self->pixelres);
             }
+
         } else {
             status=0;
             wlog("Got unexpected header keyword: '%s'", self->buff);
             goto _read_header_bail;
         }
-        if (1 != fscanf(self->fptr,"%s", self->buff) ) {
+        if (1 != fscanf(fptr,"%s", self->buff) ) {
             status=0;
             wlog("Error reading header keyword");
             goto _read_header_bail;
@@ -272,13 +314,14 @@ int mangle_read_weights(struct MangleMask* self, const char* weightfile)
     // free memory
     free(weight_new);
 
-    // close file
-    fclose(wfptr);
 
     // and because it all worked we can set the filename
     snprintf(self->weightfile,_MANGLE_MAX_FILELEN,"%s",weightfile);
 
 _mangle_readweight_bail:
+    if (wfptr != NULL) {
+        fclose(wfptr);
+    }
     return status;
 }
 

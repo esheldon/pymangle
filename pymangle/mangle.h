@@ -23,7 +23,6 @@ struct MangleMask {
     int verbose;
 
     char* filename;
-    FILE* fptr;
     char buff[_MANGLE_SMALL_BUFFSIZE];
 
     char weightfile[_MANGLE_MAX_FILELEN];
@@ -44,7 +43,7 @@ void mangle_set_verbosity(struct MangleMask* self, int verbosity);
 void mangle_print(FILE* fptr, struct MangleMask* self, int verbosity);
 
 int mangle_read(struct MangleMask* self, const char* filename);
-int mangle_read_header(struct MangleMask* self);
+int mangle_read_header(struct MangleMask* self, FILE *fptr);
 
 int mangle_read_weights(struct MangleMask* self, const char* filename);
 int mangle_set_weights(struct MangleMask* self, long double *weights);

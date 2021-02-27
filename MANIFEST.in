@@ -1,3 +1,2 @@
 include README.md
-include README.rts
-recursive-include pymangle *c *h
+recursive-include pymangle *.c *.h

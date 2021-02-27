@@ -717,12 +717,12 @@ PyMangleMask_read_weights(struct PyMangleMask* self, PyObject *args, PyObject *k
     char *weightfile = NULL;
 
     if (!PyArg_ParseTuple(args, (char*)"s", &weightfile)) {
-	Py_RETURN_FALSE;
+        Py_RETURN_FALSE;
     }
 
     if (!mangle_read_weights(self->mask, weightfile)) {
-	PyErr_Format(PyExc_IOError,"Error reading weight file %s",weightfile);
-	Py_RETURN_FALSE;
+        PyErr_Format(PyExc_IOError,"Error reading weight file %s",weightfile);
+        Py_RETURN_FALSE;
     }
 
     Py_RETURN_TRUE;
@@ -735,25 +735,25 @@ PyMangleMask_set_weights(struct PyMangleMask* self, PyObject *args, PyObject *kw
     long double *weights;
 
     if (!PyArg_ParseTuple(args, (char*)"O", &weight_obj)) {
-	PyErr_SetString(PyExc_TypeError,"Failed to parse args to set_weights");
-	Py_RETURN_FALSE;
+        PyErr_SetString(PyExc_TypeError,"Failed to parse args to set_weights");
+        Py_RETURN_FALSE;
     }
 
     if (PyArray_NDIM((PyArrayObject *)weight_obj) != 1) {
-	PyErr_SetString(PyExc_ValueError,"Input to set_weights must be 1D array");
-	Py_RETURN_FALSE;
+        PyErr_SetString(PyExc_ValueError,"Input to set_weights must be 1D array");
+        Py_RETURN_FALSE;
     }
 
     if (PyArray_DIM((PyArrayObject *)weight_obj, 0) != self->mask->npoly) {
-	PyErr_SetString(PyExc_ValueError,"Input number of weights must be equal to number of polygons.");
-	Py_RETURN_FALSE;
+        PyErr_SetString(PyExc_ValueError,"Input number of weights must be equal to number of polygons.");
+        Py_RETURN_FALSE;
     }
 
     weights = (long double *) PyArray_DATA((PyArrayObject *)weight_obj);
 
     if (!mangle_set_weights(self->mask, weights)) {
-	PyErr_SetString(PyExc_ValueError,"Error setting weights");
-	Py_RETURN_FALSE;
+        PyErr_SetString(PyExc_ValueError,"Error setting weights");
+        Py_RETURN_FALSE;
     }
 
     Py_RETURN_TRUE;
@@ -775,22 +775,22 @@ PyMangleMask_repr(struct PyMangleMask* self) {
     npix = (mask->pixel_list_vec != NULL) ? mask->pixel_list_vec->size : 0;
    
     snprintf(buff,4096,
-	     "Mangle\n"
-	     "\tfile:       %s\n"
-	     "\tarea:       %Lg sqdeg\n"
-	     "\tnpoly:      %ld\n"
-	     "\tpixeltype:  '%c'\n"
-	     "\tpixelres:   %ld\n"
-	     "\treal:       %d\n"
-	     "\tnpix:       %ld\n"
-	     "\tsnapped:    %d\n"
-	     "\tbalkanized: %d\n"
-	     "\tweightfile: %s\n"
-	     "\tverbose:    %d\n", 
-	     mask->filename, mask->total_area*R2D*R2D, 
-	     npoly, mask->pixeltype, mask->pixelres, mask->real, npix, 
-	     mask->snapped, mask->balkanized, mask->weightfile,
-	     mask->verbose);
+             "Mangle\n"
+             "\tfile:       %s\n"
+             "\tarea:       %Lg sqdeg\n"
+             "\tnpoly:      %ld\n"
+             "\tpixeltype:  '%c'\n"
+             "\tpixelres:   %ld\n"
+             "\treal:       %d\n"
+             "\tnpix:       %ld\n"
+             "\tsnapped:    %d\n"
+             "\tbalkanized: %d\n"
+             "\tweightfile: %s\n"
+             "\tverbose:    %d\n", 
+             mask->filename, mask->total_area*R2D*R2D, 
+             npoly, mask->pixeltype, mask->pixelres, mask->real, npix, 
+             mask->snapped, mask->balkanized, mask->weightfile,
+             mask->verbose);
 #if PY_MAJOR_VERSION >= 3
     return PyUnicode_FromString((const char*)buff);
 #else
@@ -1057,11 +1057,11 @@ PyMangleMask_polyid_and_weight(struct PyMangleMask* self, PyObject* args)
     for (i=0; i<nra; i++) {
         point_set_from_radec(&pt, *ra_ptr, *dec_ptr);
 
-	//status=mangle_polyid_and_weight_nopix(self->mask,
-	status=MANGLE_POLYID_AND_WEIGHT(self->mask, 		  
-					&pt, 
-					poly_id_ptr, 
-					weight_ptr);
+        //status=mangle_polyid_and_weight_nopix(self->mask,
+        status=MANGLE_POLYID_AND_WEIGHT(self->mask,
+                                        &pt, 
+                                        poly_id_ptr, 
+                                        weight_ptr);
 
         if (status != 1) {
             goto _poly_id_and_weight_cleanup;
@@ -1556,43 +1556,16 @@ PyMangleMask_genrand_range(struct PyMangleMask* self, PyObject* args)
         goto _genrand_range_cleanup;
     }
     if (!radec_range_to_costhetaphi((long double)ramin,(long double)ramax,
-				    (long double)decmin,(long double)decmax,
+                                    (long double)decmin,(long double)decmax,
                                     &cthmin,&cthmax,&phimin,&phimax)) {
         status=0;
         goto _genrand_range_cleanup;
     }
 
     point_set_from_radec(&pt, ramin, decmin);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
     point_set_from_radec(&pt, ramin, decmax);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
     point_set_from_radec(&pt, ramax, decmin);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
     point_set_from_radec(&pt, ramax, decmax);
-    status=MANGLE_POLYID_AND_WEIGHT(self->mask, &pt, &poly_id, &weight);
-    if (poly_id >= 0) {
-        num_contained += 1;
-    }
-
-    if (num_contained==0) {
-        PyErr_Format(PyExc_ValueError,
-                "no corners are contained within mask");
-        status=0;
-        goto _genrand_range_cleanup;
-    }
-
 
     if (!(ra_obj=make_longdouble_array(nrand, "ra", &ra_ptr))) {
         status=0;
@@ -1651,20 +1624,20 @@ PyMangleMask_pixels(struct PyMangleMask* self) {
     npy_intp i;
 
     if (!(pixel_obj=make_intp_array(self->mask->poly_vec->size,"pixels", &pixel_ptr))) {
-	status = 0;
-	goto _pixels_cleanup;
+        status = 0;
+        goto _pixels_cleanup;
     }
 
     ply = &self->mask->poly_vec->data[0];
     for (i=0;i<self->mask->poly_vec->size;i++) {
-	pixel_ptr[i] = ply->pixel_id;
-	ply++;
+        pixel_ptr[i] = ply->pixel_id;
+        ply++;
     }
 
  _pixels_cleanup:
     if (status != 1) {
-	Py_XDECREF(pixel_obj);
-	return NULL;
+        Py_XDECREF(pixel_obj);
+        return NULL;
     }
 
     return PyArray_Return((PyArrayObject *)pixel_obj);
@@ -1679,20 +1652,20 @@ PyMangleMask_weights(struct PyMangleMask* self) {
     npy_intp i;
 
     if (!(weight_obj=make_longdouble_array(self->mask->poly_vec->size,"weight", &weight_ptr))) {
-	status = 0;
-	goto _weights_cleanup;
+        status = 0;
+        goto _weights_cleanup;
     }
 
     ply = &self->mask->poly_vec->data[0];
     for (i=0;i<self->mask->poly_vec->size;i++) {
-	weight_ptr[i] = ply->weight;
-	ply++;
+        weight_ptr[i] = ply->weight;
+        ply++;
     }
 
  _weights_cleanup:
     if (status != 1) {
-	Py_XDECREF(weight_obj);
-	return NULL;
+        Py_XDECREF(weight_obj);
+        return NULL;
     }
 
     return PyArray_Return((PyArrayObject *)weight_obj);
@@ -1707,20 +1680,20 @@ PyMangleMask_areas(struct PyMangleMask* self) {
     npy_intp i;
 
     if (!(area_obj=make_longdouble_array(self->mask->poly_vec->size,"area", &area_ptr))) {
-	status = 0;
-	goto _areas_cleanup;
+        status = 0;
+        goto _areas_cleanup;
     }
 
     ply = &self->mask->poly_vec->data[0];
     for (i=0;i<self->mask->poly_vec->size;i++) {
-	area_ptr[i] = ply->area*R2D*R2D;
-	ply++;
+        area_ptr[i] = ply->area*R2D*R2D;
+        ply++;
     }
 
  _areas_cleanup:
     if (status != 1) {
-	Py_XDECREF(area_obj);
-	return NULL;
+        Py_XDECREF(area_obj);
+        return NULL;
     }
 
     return PyArray_Return((PyArrayObject *)area_obj);
@@ -1747,9 +1720,9 @@ PyMangleMask_calc_simplepix(struct PyMangleMask *self, PyObject *args) {
     }
 
     if (self->mask->pixeltype == 'u') {
-	// not pixelized!
-	PyErr_SetString(PyExc_ValueError,"Must be a pixelized file");
-	return NULL;
+        // not pixelized!
+        PyErr_SetString(PyExc_ValueError,"Must be a pixelized file");
+        return NULL;
     }
 
     if (!check_ra_dec_arrays(ra_obj,dec_obj,&ra_ptr,&nra,&dec_ptr,&ndec)) {
@@ -1760,13 +1733,13 @@ PyMangleMask_calc_simplepix(struct PyMangleMask *self, PyObject *args) {
     }
 
     for (i=0; i<nra; i++) {
-	point_set_from_radec(&pt, *ra_ptr, *dec_ptr);
+        point_set_from_radec(&pt, *ra_ptr, *dec_ptr);
 
-	*simplepix_ptr = get_pixel_simple(self->mask->pixelres,&pt);
+        *simplepix_ptr = get_pixel_simple(self->mask->pixelres,&pt);
 
-	ra_ptr++;
-	dec_ptr++;
-	simplepix_ptr++;
+        ra_ptr++;
+        dec_ptr++;
+        simplepix_ptr++;
     }
 
     return simplepix_obj;

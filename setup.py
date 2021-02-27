@@ -1,5 +1,4 @@
 import glob
-import os
 
 from setuptools import setup
 from setuptools.extension import Extension
@@ -29,29 +28,21 @@ class BuildExt(build_ext.build_ext):
 
 exec(open('pymangle/version.py').read())
 
-description = "Simple python code to read and work with Mangle masks."
+description = "A python code to read and work with Mangle masks."
 
-dname = os.path.dirname(__file__)
-rstname = os.path.join(dname, 'README.rst')
-if os.path.exists(rstname):
-    desc_file = rstname
-else:
-    desc_file = os.path.join(dname, 'README.md')
-
-with open(desc_file) as fobj:
+with open('README.md') as fobj:
     long_description = fobj.read()
-
 
 setup(name="pymangle",
       packages=['pymangle'],
       description=description,
       long_description=long_description,
+      long_description_content_type='text/markdown',
       version=__version__,
       license="GPL",
-      install_requires=['numpy', ],
+      install_requires=['numpy'],
       ext_modules=[ext],
-      setup_requires=['numpy', ],
+      setup_requires=['numpy'],
       cmdclass={'build_ext': BuildExt},
       include_package_data=True,
-      # include_dirs=numpy.get_include()
       )
