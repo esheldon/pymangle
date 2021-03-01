@@ -16,7 +16,7 @@ functions:
 # we also grab the doc strings from the C code as needed,
 # only writing new ones in the over-ridden methods
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 from numpy import array
 from . import _mangle
