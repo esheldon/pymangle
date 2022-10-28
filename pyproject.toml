@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "pymangle"
+version = "0.9.2"
+description = "\"A python code to read and work with Mangle masks.\""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+numpy = "^1.23.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
