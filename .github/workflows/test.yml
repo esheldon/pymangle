@@ -1,43 +1,52 @@
-name: tests
+name: pymangle CI
 
 on:
-  push:
-    branches:
-      - master
-  pull_request: null
+    push:
+        branches:
+            - master
+    pull_request:
+        branches:
+            - master
+            - releases/*
 
 jobs:
-  tests:
-    name: tests
-    strategy:
-      matrix:
-        pyver: [3.6, 3.7, 3.8]
+    tests:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ ubuntu-latest ]
+                py: [ "3.11" ]
+                CC: [ gcc ]
+                CXX: [ g++ ]
 
-    runs-on: 'ubuntu-latest'
+        defaults:
+            run:
+                # cf. https://github.com/conda-incubator/setup-miniconda#important
+                shell: bash -l {0}
 
-    steps:
-      - uses: actions/checkout@v2
+        steps:
+            - uses: actions/checkout@v2
+            - uses: conda-incubator/setup-miniconda@v2
+              with:
+                  python-version: ${{ matrix.pyver }}
+                  channels: conda-forge,defaults
+                  channel-priority: strict
+                  show-channel-urls: true
+                  miniforge-version: latest
 
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          python-version: ${{ matrix.pyver }}
-          channels: conda-forge,defaults
-          channel-priority: strict
-          show-channel-urls: true
+            - name: Install deps
+              run: |
+                conda config --set always_yes yes
+                conda install numpy pytest flake8
 
-      - name: configure conda and install code
-        shell: bash -l {0}
-        run: |
-          conda config --set always_yes yes
-          conda install --quiet setuptools flake8
+            - name: Install pymangle
+              run:
+                pip install .
 
-          python -m pip install -e .
+            - name: lint
+              run: |
+                flake8 pymangle
 
-      - name: lint
-        shell: bash -l {0}
-        run: |
-          flake8 pymangle
-      - name: test
-        shell: bash -l {0}
-        run: |
-          python -c 'import pymangle; pymangle.test.test()'
+            - name: Run tests
+              run: |
+                pytest -vv tests/

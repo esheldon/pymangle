@@ -18,7 +18,7 @@ functions:
 
 from __future__ import print_function, absolute_import
 
-from numpy import array
+from numpy import array, longdouble
 from . import _mangle
 
 
@@ -91,8 +91,8 @@ class Mangle(_mangle.Mangle):
         ------
         polyd,weight tuple of arrays
         """
-        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype=longdouble, copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype=longdouble, copy=False, order='C')
         return super(Mangle, self).polyid_and_weight(ra, dec)
 
     def polyid(self, ra, dec):
@@ -110,8 +110,8 @@ class Mangle(_mangle.Mangle):
         ------
         Array of poly ids
         """
-        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype=longdouble, copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype=longdouble, copy=False, order='C')
         return super(Mangle, self).polyid(ra, dec)
 
     def weight(self, ra, dec):
@@ -129,8 +129,8 @@ class Mangle(_mangle.Mangle):
         ------
         Array of weights
         """
-        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype=longdouble, copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype=longdouble, copy=False, order='C')
         return super(Mangle, self).weight(ra, dec)
 
     def contains(self, ra, dec):
@@ -149,8 +149,8 @@ class Mangle(_mangle.Mangle):
         Array of zeros or ones
         """
         # we specify order to force contiguous
-        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype=longdouble, copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype=longdouble, copy=False, order='C')
         return super(Mangle, self).contains(ra, dec)
 
     def check_quadrants(self,
@@ -194,10 +194,10 @@ class Mangle(_mangle.Mangle):
             2**4 is set if fourth quadrant is OK
         """
         # we specify order to force contiguous
-        ra = array(ra, ndmin=1, dtype='f16', copy=False, order='C')
-        dec = array(dec, ndmin=1, dtype='f16', copy=False, order='C')
+        ra = array(ra, ndmin=1, dtype=longdouble, copy=False, order='C')
+        dec = array(dec, ndmin=1, dtype=longdouble, copy=False, order='C')
         angle_degrees = array(
-            angle_degrees, ndmin=1, dtype='f16', copy=False, order='C'
+            angle_degrees, ndmin=1, dtype=longdouble, copy=False, order='C'
         )
         return super(Mangle, self).check_quadrants(
             ra, dec, angle_degrees,
@@ -219,8 +219,8 @@ class Mangle(_mangle.Mangle):
         ------
         Array of zeros or ones
         """
-        ra = array(ra, ndmin=1, dtype='f16', copy=False)
-        dec = array(dec, ndmin=1, dtype='f16', copy=False)
+        ra = array(ra, ndmin=1, dtype=longdouble, copy=False)
+        dec = array(dec, ndmin=1, dtype=longdouble, copy=False)
         return super(Mangle, self).calc_simplepix(ra, dec)
 
     def _set_weights(self, weights):
@@ -232,7 +232,7 @@ class Mangle(_mangle.Mangle):
             )
 
         # make long doubles
-        weights = array(weights, ndmin=1, dtype='f16', copy=False)
+        weights = array(weights, ndmin=1, dtype=longdouble, copy=False)
 
         super(Mangle, self).set_weights(weights)
 
@@ -299,7 +299,7 @@ class Cap(_mangle.Cap):
         data: array or sequence
             An length 4 array of 128 bit floats, or convertable to that.
         """
-        data = array(data, ndmin=1, dtype='f16', copy=False)
+        data = array(data, ndmin=1, dtype=longdouble, copy=False)
         if data.size != 4:
             raise ValueError(
                 "capdata must be an array of length 4, got %d" % data.size
@@ -414,7 +414,7 @@ class Polygon(_mangle.Polygon):
             raise ValueError("cap_vec must be of "
                              "type CapVec, got %s" % type(cap_vec))
 
-        wtarr = array(weight, ndmin=1, dtype='f16', copy=False)
+        wtarr = array(weight, ndmin=1, dtype=longdouble, copy=False)
 
         super(Polygon, self).__init__(
             poly_id,
