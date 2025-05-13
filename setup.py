@@ -26,6 +26,7 @@ class BuildExt(build_ext.build_ext):
         self.include_dirs.extend(glob.glob("pymangle/*h"))
 
 
+__version__ = None
 exec(open('pymangle/version.py').read())
 
 description = "A python code to read and work with Mangle masks."
