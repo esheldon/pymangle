@@ -1,52 +1,59 @@
 name: pymangle CI
 
 on:
-    push:
-        branches:
-            - master
-    pull_request:
-        branches:
-            - master
-            - releases/*
+  push:
+    branches:
+      - master
+  pull_request: null
 
 jobs:
-    tests:
-        runs-on: ${{ matrix.os }}
-        strategy:
-            matrix:
-                os: [ ubuntu-latest ]
-                py: [ "3.11" ]
-                CC: [ gcc ]
-                CXX: [ g++ ]
+  tests:
+    name: tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        config:
+          - { pyver: "3.8", npver: "1"}
+          - { pyver: "3.11", npver: "1.26"}
+          - { pyver: "3.12", npver: "1.26"}
+          - { pyver: "3.11", npver: "2.3.0"}
+          - { pyver: "3.12", npver: "2.3.0"}
+          - { pyver: "3.13", npver: "2.3.0"}
 
-        defaults:
-            run:
-                # cf. https://github.com/conda-incubator/setup-miniconda#important
-                shell: bash -l {0}
+    runs-on: ${{ matrix.os }}
 
-        steps:
-            - uses: actions/checkout@v2
-            - uses: conda-incubator/setup-miniconda@v2
-              with:
-                  python-version: ${{ matrix.pyver }}
-                  channels: conda-forge,defaults
-                  channel-priority: strict
-                  show-channel-urls: true
-                  miniforge-version: latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
-            - name: Install deps
-              run: |
-                conda config --set always_yes yes
-                conda install numpy pytest flake8
+      - uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f  # v3.2.0
+        with:
+          python-version: ${{ matrix.config.pyver }}
+          channels: conda-forge
+          channel-priority: strict
+          show-channel-urls: true
+          miniforge-version: latest
 
-            - name: Install pymangle
-              run:
-                pip install .
+      - name: Install conda deps
+        shell: bash -l {0}
+        run: |
+          conda config --set always_yes yes
+          conda install \
+            numpy=${{ matrix.config.npver }} \
+            pytest \
+            ruff
 
-            - name: lint
-              run: |
-                flake8 pymangle
+      - name: Install pymangle
+        run: |
+          pip install .
 
-            - name: Run tests
-              run: |
-                pytest -vv tests/
+      -  name: Lint with ruff
+        run: |
+          ruff check
+
+      - name: Run tests
+        run: |
+          pytest -v tests

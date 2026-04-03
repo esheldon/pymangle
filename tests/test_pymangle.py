@@ -293,4 +293,3 @@ polygon 2 ( 4 caps, 1 weight, 0 pixel, 0.302363552547417 str):
 
         # this would raise an error before adding copy_if_needed
         m.contains(200, 0)
-
