@@ -3,14 +3,13 @@ name: pymangle CI
 on:
   push:
     branches:
-      - master
+      - main
   pull_request: null
 
 jobs:
   tests:
     name: tests
     strategy:
-      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest]
         config:
@@ -25,35 +24,34 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          fetch-tags: true
 
-      - uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f  # v3.2.0
+      - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.config.pyver }}
-          channels: conda-forge
+          channels: conda-forge,defaults
           channel-priority: strict
           show-channel-urls: true
           miniforge-version: latest
 
-      - name: Install conda deps
+      - name: configure conda and install code
         shell: bash -l {0}
         run: |
           conda config --set always_yes yes
-          conda install \
+
+          conda install --quiet \
+            pip \
             numpy=${{ matrix.config.npver }} \
             pytest \
             ruff
 
-      - name: Install pymangle
-        run: |
-          pip install .
+          python -m pip install -e .
 
-      -  name: Lint with ruff
+      - name: lint
+        shell: bash -l {0}
         run: |
           ruff check
 
-      - name: Run tests
+      - name: test
+        shell: bash -l {0}
         run: |
           pytest -v tests
